@@ -167,12 +167,19 @@
             __data_ondragstart = getConfig(['data', 'ondragstart'], function () {}),
             __data_ondragend = getConfig(['data', 'ondragend'], function () {});
 
+        // configuration for no plot-able data supplied.
+        var __data_empty_abort = getConfig(['data', 'empty', 'abort'], true),
+            __data_empty_label_text = getConfig(['data', 'empty', 'label', 'text'], ""),
+            __data_empty_label_size = getConfig(['data', 'empty', 'label', 'size'], false),
+            __data_empty_label_fill = getConfig(['data', 'empty', 'label', 'fill'], false);
+
         // subchart
         var __subchart_show = getConfig(['subchart', 'show'], false),
             __subchart_size_height = getConfig(['subchart', 'size', 'height'], 60);
 
         // color
         var __color_pattern = getConfig(['color', 'pattern'], []),
+            __color_opacity = getConfig(['color', 'opacity'], 1), // not accepted by Masayuki Tanaka; DeviceWise only.
             __color_threshold  = getConfig(['color', 'threshold'], {});
 
         // legend
@@ -1079,7 +1086,7 @@
               .transition().duration(50)
                 .attr("d", svgArc);
             svg.selectAll('.' + CLASS.arc)
-                .style("opacity", 1);
+                .style("opacity", __color_opacity); // not accepted by Masayuki Tanaka; DeviceWise only.
         }
         function shouldShowArcLable() {
             var shouldShow = true;
@@ -2251,7 +2258,7 @@
             return rect;
         }
 
-        function getInterporate(d) {
+        function getInterpolate(d) {
             return isSplineType(d) ? "cardinal" : isStepType(d) ? "step-after" : "linear";
         }
 
@@ -2360,7 +2367,7 @@
                 var data = filterRemoveNull(d.values), x0, y0;
 
                 if (isAreaType(d)) {
-                    return area.interpolate(getInterporate(d))(data);
+                    return area.interpolate(getInterpolate(d))(data);
                 } else {
                     x0 = x(data[0].x);
                     y0 = getYScale(d.id)(data[0].value);
@@ -2379,7 +2386,7 @@
                 };
 
             line = __axis_rotated ? line.x(yValue).y(xValue) : line.x(xValue).y(yValue);
-            if (!__line_connect_null) { line = line.defined(function (d) { return d.value != null; }); }
+            if (!__line_connect_null) { line = line.defined(function (d) { return d.value !== null; }); }
             return function (d) {
                 var data = __line_connect_null ? filterRemoveNull(d.values) : d.values,
                     x = isSub ? x : subX, y = yScaleGetter(d.id), x0 = 0, y0 = 0;
@@ -2387,7 +2394,7 @@
                     if (__data_regions[d.id]) {
                         return lineWithRegions(data, x, y, __data_regions[d.id]);
                     } else {
-                        return line.interpolate(getInterporate(d))(data);
+                        return line.interpolate(getInterpolate(d))(data);
                     }
                 } else {
                     if (data[0]) {
@@ -2742,6 +2749,15 @@
             updateLegend(mapToIds(c3.data.targets), {withTransform: false, withTransitionForTransform: false});
 
             /*-- Main Region --*/
+            if (c3.data.targets.length === 0) {
+              main.append("text")
+                .attr("class", CLASS.text)
+                .attr("x", (main[0][0].parentNode.width.baseVal.value / 2) - margin.left)
+                .attr("y", (main[0][0].parentNode.height.baseVal.value / 2) - margin.top)
+                .attr("text-anchor", "middle")
+                .attr("style", (__data_empty_label_fill ? "fill:"+ __data_empty_label_fill +"; " : "") + (__data_empty_label_size ? "font-size:"+ __data_empty_label_size +"; " : ""))
+                .text(__data_empty_label_text);
+            } // not accepted by Masayuki Tanaka; DeviceWise only.
 
             // Grids
             grid = main.append('g')
@@ -2941,7 +2957,7 @@
             }
 
             // Bind resize event
-            if (window.onresize == null) {
+            if (window.onresize === null) {
                 window.onresize = generateResize();
             }
             if (window.onresize.add) {
@@ -3285,6 +3301,11 @@
             var duration, durationForExit, durationForAxis;
             var targetsToShow = filterTargetsToShow(c3.data.targets), tickValues, i, intervalForCulling;
 
+            // abort if no targets to show
+            if (targetsToShow.length === 0 && __data_empty_abort) {
+                return;
+            } // not accepted by Masayuki Tanaka; DeviceWise only.
+
             options = options || {};
             withY = getOption(options, "withY", true);
             withSubchart = getOption(options, "withSubchart", true);
@@ -3534,7 +3555,8 @@
             mainBar.enter().append('path')
                 .attr("class", classBar)
                 .style("stroke", function (d) { return color(d.id); })
-                .style("fill", function (d) { return color(d.id); });
+                .style("fill", function (d) { return color(d.id); })
+                .style("fill-opacity", function () { if (__color_opacity) { return __color_opacity; } return initialOpacity; }); // not accepted by Masayuki Tanaka; DeviceWise only.
             mainBar
                 .style("opacity", initialOpacity)
               .transition().duration(duration)
@@ -3697,7 +3719,7 @@
                 .style("fill", function (d) {
                     return levelColor ? levelColor(d.data.values[0].value) : color(d.data.id);
                 }) // Where gauge reading color would receive customization.
-                .style("opacity", 1)
+                .style("opacity", __color_opacity) // not accepted by Masayuki Tanaka; DeviceWise only.
                 .call(endall, function () {
                     transiting = false;
                 });
@@ -4872,7 +4894,7 @@
         }
         function generateTicks(scale) {
             var i, domain, ticks = [];
-            if (scale.ticks) {
+            if (scale.ticks && tickArguments !== undefined) { // not accepted by Masayuki Tanaka; DeviceWise only.
                 return scale.ticks.apply(scale, tickArguments);
             }
             domain = scale.domain();
