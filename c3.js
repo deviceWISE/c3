@@ -48,6 +48,7 @@
         arcs: 'c3-arcs',
         area: 'c3-area',
         areas: 'c3-areas',
+        empty: 'c3-empty',
         text: 'c3-text',
         texts: 'c3-texts',
         gaugeValue: 'c3-gauge-value',
@@ -168,10 +169,7 @@
             __data_ondragend = getConfig(['data', 'ondragend'], function () {});
 
         // configuration for no plot-able data supplied.
-        var __data_empty_abort = getConfig(['data', 'empty', 'abort'], true),
-            __data_empty_label_text = getConfig(['data', 'empty', 'label', 'text'], ""),
-            __data_empty_label_size = getConfig(['data', 'empty', 'label', 'size'], false),
-            __data_empty_label_fill = getConfig(['data', 'empty', 'label', 'fill'], false);
+        var __data_empty_label_text = getConfig(['data', 'empty', 'label', 'text'], "");
 
         // subchart
         var __subchart_show = getConfig(['subchart', 'show'], false),
@@ -264,6 +262,7 @@
         // gauge
         var __gauge_label_show = getConfig(['gauge', 'label', 'show'], true),
             __gauge_label_format = getConfig(['gauge', 'label', 'format']),
+            __gauge_expand = getConfig(['gauge', 'expand'], true),
             __gauge_min = getConfig(['gauge', 'min'], 0),
             __gauge_max = getConfig(['gauge', 'max'], 100),
             __gauge_onclick = getConfig(['gauge', 'onclick'], function () {}),
@@ -2163,7 +2162,7 @@
         }
 
         function shouldExpand(id) {
-            return (isDonutType(id) && __donut_expand) || (isPieType(id) && __pie_expand);
+            return (isDonutType(id) && __donut_expand) || (isGaugeType(id) && __gauge_expand) || (isPieType(id) && __pie_expand);
         }
 
         //-- Color --//
@@ -2813,11 +2812,11 @@
             /*-- Main Region --*/
             if (c3.data.targets.length === 0) {
               main.append("text")
-                .attr("class", CLASS.text)
-                .attr("x", (main[0][0].parentNode.width.baseVal.value / 2) - margin.left)
-                .attr("y", (main[0][0].parentNode.height.baseVal.value / 2) - margin.top)
-                .attr("text-anchor", "middle")
-                .attr("style", (__data_empty_label_fill ? "fill:"+ __data_empty_label_fill +"; " : "") + (__data_empty_label_size ? "font-size:"+ __data_empty_label_size +"; " : ""))
+                .attr("class", CLASS.text + ' ' + CLASS.empty)
+                .attr("x", (getCurrentWidth() - margin.left - margin.right) / 2)
+                .attr("y", (getCurrentHeight() - margin.top - margin.bottom) / 2)
+                .attr("text-anchor", "middle") // horizontal centering of text at x position in all browsers.
+                .attr("dominant-baseline", "middle") // vertical centering of text at y position in all browsers, except IE.
                 .text(__data_empty_label_text);
             } // not accepted by Masayuki Tanaka; DeviceWise only.
 
@@ -3368,11 +3367,6 @@
             var drawArea, drawAreaOnSub, drawBar, drawBarOnSub, drawLine, drawLineOnSub, xForText, yForText;
             var duration, durationForExit, durationForAxis, waitForDraw = generateWait();
             var targetsToShow = filterTargetsToShow(c3.data.targets), tickValues, i, intervalForCulling;
-
-            // abort if no targets to show
-            if (targetsToShow.length === 0 && __data_empty_abort) {
-                return;
-            } // not accepted by Masayuki Tanaka; DeviceWise only.
 
             options = options || {};
             withY = getOption(options, "withY", true);
