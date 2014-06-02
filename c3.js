@@ -4,7 +4,7 @@
     /*global define, module, exports, require */
 
     var c3 = {
-        version: "0.2.0"
+        version: "0.2.1"
     };
 
     var CLASS = {
@@ -1218,8 +1218,9 @@
                 yDomainMax = isValue(yMax) ? yMax : getYDomainMax(yTargets),
                 domainLength, padding, padding_top, padding_bottom,
                 center = axisId === 'y2' ? __axis_y2_center : __axis_y_center,
-                yDomainAbs, widths, diff, ratio,
-                showHorizontalDataLabel = hasDataLabel() && __axis_rotated;
+                yDomainAbs, lengths, diff, ratio,
+                showHorizontalDataLabel = hasDataLabel() && __axis_rotated,
+                showVerticalDataLabel = hasDataLabel() && !__axis_rotated;
             if (yTargets.length === 0) { // use current domain if target of axisId is none
                 return axisId === 'y2' ? y2.domain() : y.domain();
             }
@@ -1235,11 +1236,15 @@
             }
             // add padding for data label
             if (showHorizontalDataLabel) {
-                widths = getDataLabelWidth(yDomainMin, yDomainMax);
+                lengths = getDataLabelLength(yDomainMin, yDomainMax, axisId, 'width');
                 diff = diffDomain(y.range());
-                ratio = [widths[0] / diff, widths[1] / diff];
+                ratio = [lengths[0] / diff, lengths[1] / diff];
                 padding_top += domainLength * (ratio[1] / (1 - ratio[0] - ratio[1]));
                 padding_bottom += domainLength * (ratio[0] / (1 - ratio[0] - ratio[1]));
+            } else if (showVerticalDataLabel) {
+                lengths = getDataLabelLength(yDomainMin, yDomainMax, axisId, 'height');
+                padding_top += lengths[1];
+                padding_bottom += lengths[0];
             }
             if (axisId === 'y' && __axis_y_padding) {
                 padding_top = getAxisPadding(__axis_y_padding, 'top', padding, domainLength);
@@ -1249,8 +1254,8 @@
                 padding_top = getAxisPadding(__axis_y2_padding, 'top', padding, domainLength);
                 padding_bottom = getAxisPadding(__axis_y2_padding, 'bottom', padding, domainLength);
             }
-            // Bar chart with only positive values should be 0-based
-            if (hasBarType(yTargets) && !hasNegativeValueInTargets(yTargets)) {
+            // Bar/Area chart with only positive values should be 0-based
+            if ((hasBarType(yTargets) || hasAreaType(yTargets)) && !hasNegativeValueInTargets(yTargets)) {
                 padding_bottom = yDomainMin;
             }
             return [yDomainMin - padding_bottom, yDomainMax + padding_top];
@@ -1312,6 +1317,7 @@
                 x.domain(domain ? domain : brush.empty() ? orgXDomain : brush.extent());
                 if (__zoom_enabled) { zoom.scale(x).updateScaleExtent(); }
             }
+            return x.domain();
         }
         function diffDomain(d) {
             return d[1] - d[0];
@@ -1399,7 +1405,7 @@
             return xValues;
         }
         function getXValue(id, i) {
-            return id in c3.data.xs && c3.data.xs[id] && c3.data.xs[id][i] ? c3.data.xs[id][i] : i;
+            return id in c3.data.xs && c3.data.xs[id] && isValue(c3.data.xs[id][i]) ? c3.data.xs[id][i] : i;
         }
         function getOtherTargetXs() {
             var idsForX = Object.keys(c3.data.xs);
@@ -1807,15 +1813,17 @@
             }
             return false;
         }
-        function getDataLabelWidth(min, max) {
-            var widths = [], paddingCoef = 1.3;
+        function getDataLabelLength(min, max, axisId, key) {
+            var lengths = [0, 0], paddingCoef = 1.3;
             selectChart.select('svg').selectAll('.dummy')
                 .data([min, max])
               .enter().append('text')
-                .text(function (d) { return formatByAxisId(d.id)(d.value, d.id); })
-                .each(function (d, i) { widths[i] = this.getBoundingClientRect().width * paddingCoef; })
+                .text(function (d) { return formatByAxisId(axisId)(d); })
+                .each(function (d, i) {
+                    lengths[i] = this.getBoundingClientRect()[key] * paddingCoef;
+                })
               .remove();
-            return widths;
+            return lengths;
         }
         function getYFormat(forArc) {
             var formatForY = forArc && !hasGaugeType(c3.data.targets) ? defaultArcValueFormat : yFormat,
@@ -1839,8 +1847,8 @@
         function defaultArcValueFormat(v, ratio) {
             return (ratio * 100).toFixed(1) + '%';
         }
-        function formatByAxisId(id) {
-            var defaultFormat = function (v) { return isValue(v) ? +v : ""; }, axisId = getAxisId(id), format = defaultFormat;
+        function formatByAxisId(axisId) {
+            var format = function (v) { return isValue(v) ? +v : ""; };
             // find format according to axis id
             if (typeof __data_labels.format === 'function') {
                 format = __data_labels.format;
@@ -2135,6 +2143,9 @@
             return hasType(targets, 'line');
         }
         */
+        function hasAreaType(targets) {
+            return hasType(targets, 'area') || hasType(targets, 'area-spline') || hasType(targets, 'area-step');
+        }
         function hasBarType(targets) {
             return hasType(targets, 'bar');
         }
@@ -2886,23 +2897,19 @@
             if (__grid_x_show) {
                 grid.append("g").attr("class", CLASS.xgrids);
             }
-            if (notEmpty(__grid_x_lines)) {
-                grid.append('g').attr("class", CLASS.xgridLines);
-            }
             if (__point_focus_line_enabled) {
                 grid.append('g')
                     .attr("class", CLASS.xgridFocus)
                   .append('line')
                     .attr('class', CLASS.xgridFocus);
             }
+            grid.append('g').attr("class", CLASS.xgridLines);
 
             // Y-Grid
             if (__grid_y_show) {
                 grid.append('g').attr('class', CLASS.ygrids);
             }
-            if (notEmpty(__grid_y_lines)) {
-                grid.append('g').attr('class', CLASS.ygridLines);
-            }
+            grid.append('g').attr('class', CLASS.ygridLines);
 
             // Regions
             main.append('g')
@@ -3578,27 +3585,25 @@
                 };
                 flushXGrid();
             }
-            if (notEmpty(__grid_x_lines)) {
-                xgridLines = main.select('.' + CLASS.xgridLines).selectAll('.' + CLASS.xgridLine)
-                    .data(__grid_x_lines);
-                // enter
-                xgridLine = xgridLines.enter().append('g')
-                    .attr("class", function (d) { return CLASS.xgridLine + (d.class ? d.class : ''); });
-                xgridLine.append('line')
-                    .style("opacity", 0);
-                xgridLine.append('text')
-                    .attr("text-anchor", "end")
-                    .attr("transform", __axis_rotated ? "" : "rotate(-90)")
-                    .attr('dx', __axis_rotated ? 0 : -margin.top)
-                    .attr('dy', -5)
-                    .style("opacity", 0);
-                // udpate
-                // done in d3.transition() of the end of this function
-                // exit
-                xgridLines.exit().transition().duration(duration)
-                    .style("opacity", 0)
-                    .remove();
-            }
+            xgridLines = main.select('.' + CLASS.xgridLines).selectAll('.' + CLASS.xgridLine)
+                .data(__grid_x_lines);
+            // enter
+            xgridLine = xgridLines.enter().append('g')
+                .attr("class", function (d) { return CLASS.xgridLine + (d.class ? ' ' + d.class : ''); });
+            xgridLine.append('line')
+                .style("opacity", 0);
+            xgridLine.append('text')
+                .attr("text-anchor", "end")
+                .attr("transform", __axis_rotated ? "" : "rotate(-90)")
+                .attr('dx', __axis_rotated ? 0 : -margin.top)
+                .attr('dy', -5)
+                .style("opacity", 0);
+            // udpate
+            // done in d3.transition() of the end of this function
+            // exit
+            xgridLines.exit().transition().duration(duration)
+                .style("opacity", 0)
+                .remove();
             // Y-Grid
             if (withY && __grid_y_show) {
                 ygrid = main.select('.' + CLASS.ygrids).selectAll('.' + CLASS.ygrid)
@@ -3612,12 +3617,12 @@
                 ygrid.exit().remove();
                 smoothLines(ygrid, 'grid');
             }
-            if (withY && notEmpty(__grid_y_lines)) {
+            if (withY) {
                 ygridLines = main.select('.' + CLASS.ygridLines).selectAll('.' + CLASS.ygridLine)
                     .data(__grid_y_lines);
                 // enter
                 ygridLine = ygridLines.enter().append('g')
-                    .attr("class", function (d) { return CLASS.ygridLine + (d.class ? d.class : ''); });
+                    .attr("class", function (d) { return CLASS.ygridLine + (d.class ? ' ' + d.class : ''); });
                 ygridLine.append('line')
                     .style("opacity", 0);
                 ygridLine.append('text')
@@ -3718,7 +3723,7 @@
                     .style("fill", color)
                     .style("fill-opacity", 0);
                 mainText
-                    .text(function (d) { return formatByAxisId(d.id)(d.value, d.id); })
+                    .text(function (d) { return formatByAxisId(getAxisId(d.id))(d.value, d.id); })
                     .style("fill-opacity", initialOpacityForText);
                 mainText.exit()
                   .transition().duration(durationForExit)
@@ -4014,7 +4019,7 @@
                     flowLength = options.flow.length,
                     flowStart = getValueOnIndex(c3.data.targets[0].values, flowIndex),
                     flowEnd = getValueOnIndex(c3.data.targets[0].values, flowIndex + flowLength),
-                    orgDomain = x.domain(),
+                    orgDomain = x.domain(), domain,
                     durationForFlow = options.flow.duration || duration,
                     onend = options.flow.onend || function () {},
                     wait = generateWait();
@@ -4025,26 +4030,30 @@
                 });
 
                 // update x domain to generate axis elements for flow
-                updateXDomain(targetsToShow, true, true);
+                domain = updateXDomain(targetsToShow, true, true);
                 // update elements related to x scale
                 if (flushXGrid) { flushXGrid(true); }
 
                 // generate transform to flow
                 if (!options.flow.orgDataCount) { // if empty
-                    if (isTimeSeries || c3.data.targets[0].values.length !== 1) {
+                    if (isTimeSeries) {
                         flowStart = getValueOnIndex(c3.data.targets[0].values, 0);
                         flowEnd = getValueOnIndex(c3.data.targets[0].values, c3.data.targets[0].values.length - 1);
                         translateX = x(flowStart.x) - x(flowEnd.x);
                     } else {
-                        translateX = x(-0.5) - x(0);
+                        if (c3.data.targets[0].values.length !== 1) {
+                            translateX = (domain[0] - orgDomain[0] >= 1 ? x(orgDomain[0]) : 0) - x(flowEnd.x);
+                        } else {
+                            translateX = diffDomain(domain) / 2;
+                        }
                     }
                 } else if (options.flow.orgDataCount === 1 || flowStart.x === flowEnd.x) {
-                    translateX = x(orgDomain[0]) - x(flowEnd.x);
+                    translateX = x(orgDomain[0]) - x(domain[0]);
                 } else {
                     // TODO: fix 0.9, I don't know why 0.9..
                     translateX = (x(flowStart.x) - x(flowEnd.x)) * (isTimeSeries ? 0.9 : 1);
                 }
-                scaleX = (diffDomain(orgDomain) / diffDomain(x.domain()));
+                scaleX = (diffDomain(orgDomain) / diffDomain(domain));
                 transform = 'translate(' + translateX + ',0) scale(' + scaleX + ',1)';
 
                 d3.transition().ease('linear').duration(durationForFlow).each(function () {
@@ -4653,10 +4662,30 @@
         function isArc(d) {
             return 'data' in d && hasTarget(c3.data.targets, d.data.id);
         }
-        function getGridFilter(params) {
-            var value = params && params.value ? params.value : null,
-                klass = params && params['class'] ? params['class'] : null;
-            return value ? function (line) { return line.value !== value; } : klass ? function (line) { return line['class'] !== klass; } : function () { return true; };
+        function getGridFilterToRemove(params) {
+            return params ? function (line) {
+                var found = false;
+                [].concat(params).forEach(function (param) {
+                    if ((('value' in param && line.value === params.value) || ('class' in param && line.class === params.class))) {
+                        found = true;
+                    }
+                });
+                return found;
+            } : function () { return true; };
+        }
+        function removeGridLines(params, forX) {
+            var toRemove = getGridFilterToRemove(params),
+                toShow = function (line) { return !toRemove(line); },
+                classLines = forX ? CLASS.xgridLines : CLASS.ygridLines,
+                classLine = forX ? CLASS.xgridLine : CLASS.ygridLine;
+            main.select('.' + classLines).selectAll('.' + classLine).filter(toRemove)
+              .transition().duration(__transition_duration)
+                .style('opacity', 0).remove();
+            if (forX) {
+                __grid_x_lines = __grid_x_lines.filter(toShow);
+            } else {
+                __grid_y_lines = __grid_y_lines.filter(toShow);
+            }
         }
         function transformTo(targetIds, type, optionsForRedraw) {
             var withTransitionForAxis = !hasArcType(c3.data.targets);
@@ -4993,8 +5022,7 @@
             return c3.xgrids(__grid_x_lines.concat(grids));
         };
         c3.xgrids.remove = function (params) { // TODO: multiple
-            var filter = getGridFilter(params);
-            return c3.xgrids(__grid_x_lines.filter(filter));
+            removeGridLines(params, true);
         };
 
         c3.ygrids = function (grids) {
@@ -5008,8 +5036,7 @@
             return c3.ygrids(__grid_y_lines.concat(grids));
         };
         c3.ygrids.remove = function (params) { // TODO: multiple
-            var filter = getGridFilter(params);
-            return c3.ygrids(__grid_y_lines.filter(filter));
+            removeGridLines(params, false);
         };
 
         c3.regions = function (regions) {
@@ -5134,11 +5161,11 @@
 
         c3.legend.show = function (targetIds) {
             showLegend(mapToTargetIds(targetIds));
-            redraw({withLegend: true});
+            updateAndRedraw({withLegend: true});
         };
         c3.legend.hide = function (targetIds) {
             hideLegend(mapToTargetIds(targetIds));
-            redraw({withLegend: true});
+            updateAndRedraw({withLegend: true});
         };
 
         c3.resize = function (size) {
