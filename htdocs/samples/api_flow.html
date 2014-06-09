@@ -15,16 +15,13 @@
     <script src="/js/c3.js"></script>
     <script>
 
-      var chart, generate = function () { return c3.generate({
+      var padding = {}, types = {}, chart, generate = function () { return c3.generate({
         data: {
           columns: [
             ['data1'],
             ['data2'],
           ],
-          types: {
-            data2: 'area',
-            data3: 'bar',
-          },
+          types: types,
           labels: true
         },
         bar: {
@@ -32,12 +29,7 @@
         },
         axis: {
           x: {
-/*
-            padding: {
-              left: 0,
-              right: 0,
-            }
-*/
+            padding: padding
           },
           y: {
 /*
@@ -62,6 +54,8 @@
       });
       };
 
+    function run() {
+
       chart = generate();
 
       setTimeout(function () {
@@ -74,7 +68,7 @@
           ],
           duration: 1500,
 
-          onend: function () {
+          done: function () {
             // Load 2 data without data2 and remove 1 data
             chart.flow({
               columns: [
@@ -84,7 +78,7 @@
               length: 0,
               duration: 1500,
 
-              onend: function () {
+              done: function () {
                 chart.flow({
                   columns: [
                     ['data1', 200, 300],
@@ -93,7 +87,7 @@
                   ],
                   length: 2,
                   duration: 1500,
-                  onend: function () {
+                  done: function () {
 
                     chart.flow({
                       columns: [
@@ -107,7 +101,7 @@
                   }
 
                 });
-              }// onend
+              }// done
 
             });
           },
@@ -170,7 +164,7 @@
             ['data3', 200, 300],
           ],
           duration: 1500,
-          onend: function () {
+          done: function () {
             chart.flow({
               columns: [
                 ['data1', 200],
@@ -192,7 +186,7 @@
           ],
           to: 1,
         });
-      }, 17000);
+      }, 18000);
 
       setTimeout(function () {
         chart.flow({
@@ -202,7 +196,26 @@
             ['data3', 400]
           ]
         });
-      }, 18000);
+      }, 19000);
+
+    }
+
+    run();
+
+    // Test for no padding
+    setTimeout(function () {
+      padding = {left: 0, right: 0};
+      run();
+    }, 22000);
+
+    // Test for other chart types
+    setTimeout(function () {
+      types = {
+        data2: 'area',
+        data3: 'bar',
+      };
+      run();
+    }, 45000);
 
     </script>
   </body>
