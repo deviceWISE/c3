@@ -90,7 +90,7 @@
 /*-- Bar --*/
 
 .c3-bar {
-  stroke-width: 2px;
+  stroke-width: 1px;
 }
 .c3-bar._expanded_ {
   fill-opacity: 0.75;

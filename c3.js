@@ -2416,10 +2416,7 @@
                         }
                     }, 10);
                 };
-            f.add = function (transition, hasFlow) {
-                if (!hasFlow) {
-                  return transition;
-                }
+            f.add = function (transition) {
                 transitionsToWait.push(transition);
             };
             return f;
@@ -2580,7 +2577,7 @@
                 };
 
             line = __axis_rotated ? line.x(yValue).y(xValue) : line.x(xValue).y(yValue);
-            if (!__line_connect_null) { line = line.defined(function (d) { return d.value !== null; }); }
+            if (!__line_connect_null) { line = line.defined(function (d) { return d.value != null; }); }
             return function (d) {
                 var data = __line_connect_null ? filterRemoveNull(d.values) : d.values,
                     x = isSub ? x : subX, y = yScaleGetter(d.id), x0 = 0, y0 = 0, path;
@@ -3168,7 +3165,7 @@
             }
 
             // Bind resize event
-            if (window.onresize === null) {
+            if (window.onresize == null) {
                 window.onresize = generateResize();
             }
             if (window.onresize.add) {
@@ -5380,7 +5377,7 @@
         }
         function generateTicks(scale) {
             var i, domain, ticks = [];
-            if (scale.ticks && tickArguments !== undefined) { // not accepted by Masayuki Tanaka; DeviceWise only.
+            if (scale.ticks) {
                 return scale.ticks.apply(scale, tickArguments);
             }
             domain = scale.domain();
