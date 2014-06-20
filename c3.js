@@ -4,7 +4,7 @@
     /*global define, module, exports, require */
 
     var c3 = {
-        version: "0.2.3"
+        version: "0.2.4"
     };
 
     var CLASS = {
@@ -143,6 +143,7 @@
         var __data_x = getConfig(['data', 'x']),
             __data_xs = getConfig(['data', 'xs'], {}),
             __data_x_format = getConfig(['data', 'x_format'], '%Y-%m-%d'),
+            __data_x_localtime = getConfig(['data', 'x_localtime'], true),
             __data_id_converter = getConfig(['data', 'id_converter'], function (id) { return id; }),
             __data_names = getConfig(['data', 'names'], {}),
             __data_classes = getConfig(['data', 'classes'], {}),
@@ -257,15 +258,15 @@
             __bar_width_ratio = getConfig(['bar', 'width', 'ratio'], 0.6),
             __bar_zerobased = getConfig(['bar', 'zerobased'], true);
 
+        // area
+        var __area_zerobased = getConfig(['area', 'zerobased'], true);
+
         // pie
         var __pie_label_show = getConfig(['pie', 'label', 'show'], true),
             __pie_label_format = getConfig(['pie', 'label', 'format']),
             __pie_label_threshold = getConfig(['pie', 'label', 'threshold'], 0.05),
             __pie_sort = getConfig(['pie', 'sort'], true),
-            __pie_expand = getConfig(['pie', 'expand'], true),
-            __pie_onclick = getConfig(['pie', 'onclick'], function () {}),
-            __pie_onmouseover = getConfig(['pie', 'onmouseover'], function () {}),
-            __pie_onmouseout = getConfig(['pie', 'onmouseout'], function () {});
+            __pie_expand = getConfig(['pie', 'expand'], true);
 
         // gauge
         var __gauge_label_show = getConfig(['gauge', 'label', 'show'], true),
@@ -273,9 +274,6 @@
             __gauge_expand = getConfig(['gauge', 'expand'], true),
             __gauge_min = getConfig(['gauge', 'min'], 0),
             __gauge_max = getConfig(['gauge', 'max'], 100),
-            __gauge_onclick = getConfig(['gauge', 'onclick'], function () {}),
-            __gauge_onmouseover = getConfig(['gauge', 'onmouseover'], function () {}),
-            __gauge_onmouseout = getConfig(['gauge', 'onmouseout'], function () {}),
             __gauge_units = getConfig(['gauge', 'units']),
             __gauge_width = getConfig(['gauge', 'width']);
 
@@ -285,10 +283,7 @@
             __donut_label_threshold = getConfig(['donut', 'label', 'threshold'], 0.05),
             __donut_sort = getConfig(['donut', 'sort'], true),
             __donut_expand = getConfig(['donut', 'expand'], true),
-            __donut_title = getConfig(['donut', 'title'], ""),
-            __donut_onclick = getConfig(['donut', 'onclick'], function () {}),
-            __donut_onmouseover = getConfig(['donut', 'onmouseover'], function () {}),
-            __donut_onmouseout = getConfig(['donut', 'onmouseout'], function () {});
+            __donut_title = getConfig(['donut', 'title'], "");
 
         // region - region to change style
         var __regions = getConfig(['regions'], []);
@@ -347,8 +342,9 @@
             color = generateColor(__data_colors, notEmpty(__color_pattern) ? __color_pattern : defaultColorPattern, __data_color),
             levelColor = notEmpty(__color_threshold) ? generateLevelColor(__color_pattern, __color_threshold) : null;
 
-        var timeFormat = __axis_x_localtime ? d3.time.format : d3.time.format.utc,
-            defaultTimeFormat = timeFormat.multi([
+        var dataTimeFormat = __data_x_localtime ? d3.time.format : d3.time.format.utc,
+            axisTimeFormat = __axis_x_localtime ? d3.time.format : d3.time.format.utc,
+            defaultAxisTimeFormat = axisTimeFormat.multi([
                 [".%L", function (d) { return d.getMilliseconds(); }],
                 [":%S", function (d) { return d.getSeconds(); }],
                 ["%I:%M", function (d) { return d.getMinutes(); }],
@@ -528,7 +524,7 @@
             main.select('line.' + CLASS.xgridFocus)
                 .attr("x1", __axis_rotated ? 0 : -10)
                 .attr("x2", __axis_rotated ? width : -10)
-                .attr("y1", __axis_rotated ? -10 : margin.top)
+                .attr("y1", __axis_rotated ? -10 : 0)
                 .attr("y2", __axis_rotated ? -10 : height);
         }
         function updateRadius() {
@@ -555,13 +551,13 @@
             return h > 0 ? h : 320;
         }
         function getCurrentPaddingTop() {
-            return __padding_top ? __padding_top : 0;
+            return isValue(__padding_top) ? __padding_top : 0;
         }
         function getCurrentPaddingBottom() {
-            return __padding_bottom ? __padding_bottom : 0;
+            return isValue(__padding_bottom) ? __padding_bottom : 0;
         }
         function getCurrentPaddingLeft() {
-            if (__padding_left) {
+            if (isValue(__padding_left)) {
                 return __padding_left;
             } else if (__axis_rotated) {
                 return !__axis_x_show ? 1 : Math.max(ceil10(getAxisWidthByAxisId('x')), 40);
@@ -571,8 +567,8 @@
         }
         function getCurrentPaddingRight() {
             var defaultPadding = 10, legendWidthOnRight = isLegendRight ? getLegendWidth() + 20 : 0;
-            if (__padding_right) {
-                return __padding_right;
+            if (isValue(__padding_right)) {
+                return __padding_right + 1; // 1 is needed not to hide tick line
             } else if (__axis_rotated) {
                 return defaultPadding + legendWidthOnRight;
             } else {
@@ -809,13 +805,13 @@
             return id in __data_axes ? __data_axes[id] : 'y';
         }
         function getXAxisTickFormat() {
-            var format = isTimeSeries ? defaultTimeFormat : isCategorized ? categoryName : function (v) { return v < 0 ? v.toFixed(0) : v; };
+            var format = isTimeSeries ? defaultAxisTimeFormat : isCategorized ? categoryName : function (v) { return v < 0 ? v.toFixed(0) : v; };
             if (__axis_x_tick_format) {
                 if (typeof __axis_x_tick_format === 'function') {
                     format = __axis_x_tick_format;
                 } else if (isTimeSeries) {
                     format = function (date) {
-                        return date ? timeFormat(__axis_x_tick_format)(date) : "";
+                        return date ? axisTimeFormat(__axis_x_tick_format)(date) : "";
                     };
                 }
             }
@@ -1026,13 +1022,19 @@
             pie.sort(null);
         }
 
+        function descByStartAngle(a, b) {
+            return a.startAngle - b.startAngle;
+        }
+
         function updateAngle(d) {
-            var found = false;
-            pie(filterTargetsToShow(c3.data.targets)).forEach(function (t) {
+            var found = false, index = 0;
+            pie(filterTargetsToShow(c3.data.targets)).sort(descByStartAngle).forEach(function (t) {
                 if (! found && t.data.id === d.data.id) {
                     found = true;
                     d = t;
+                    d.index = index;
                 }
+                index++;
             });
             if (isNaN(d.endAngle)) {
                 d.endAngle = d.startAngle;
@@ -1090,7 +1092,8 @@
             return addName({
                 id: d.data.id,
                 value: d.value,
-                ratio: getArcRatio(d)
+                ratio: getArcRatio(d),
+                index: d.index,
             });
         }
         function textForArcLabel(d) {
@@ -1157,33 +1160,6 @@
         }
         function getArcTitle() {
             return hasDonutType(c3.data.targets) ? __donut_title : "";
-        }
-        function getArcOnClick() {
-            var callback = __pie_onclick;
-            if (hasGaugeType(c3.data.targets)) {
-                callback = __gauge_onclick;
-            } else if (hasDonutType(c3.data.targets)) {
-                callback = __donut_onclick;
-            }
-            return typeof callback === 'function' ? callback : function () {};
-        }
-        function getArcOnMouseOver() {
-            var callback = __pie_onmouseover;
-            if (hasGaugeType(c3.data.targets)) {
-                callback = __gauge_onmouseover;
-            } else if (hasDonutType(c3.data.targets)) {
-                callback = __donut_onmouseover;
-            }
-            return typeof callback === 'function' ? callback : function () {};
-        }
-        function getArcOnMouseOut() {
-            var callback = __pie_onmouseout;
-            if (hasGaugeType(c3.data.targets)) {
-                callback = __gauge_onmouseout;
-            } else if (hasDonutType(c3.data.targets)) {
-                callback = __donut_onmouseout;
-            }
-            return typeof callback === 'function' ? callback : function () {};
         }
 
         //-- Domain --//
@@ -1260,7 +1236,7 @@
                 domainLength, padding, padding_top, padding_bottom,
                 center = axisId === 'y2' ? __axis_y2_center : __axis_y_center,
                 yDomainAbs, lengths, diff, ratio, isAllPositive, isAllNegative,
-                isZeroBased = (hasBarType(yTargets) && __bar_zerobased) || hasAreaType(yTargets),
+                isZeroBased = (hasBarType(yTargets) && __bar_zerobased) || (hasAreaType(yTargets) && __area_zerobased),
                 showHorizontalDataLabel = hasDataLabel() && __axis_rotated,
                 showVerticalDataLabel = hasDataLabel() && !__axis_rotated;
             if (yTargets.length === 0) { // use current domain if target of axisId is none
@@ -2332,12 +2308,13 @@
             var parsedDate;
             if (date instanceof Date) {
                 parsedDate = date;
+            } else if (typeof date === 'number') {
+                parsedDate = new Date(date);
             } else {
-                try {
-                    parsedDate = typeof date === 'number' ? new Date(date) : d3.time.format(__data_x_format).parse(date);
-                } catch (e) {
-                    window.console.error("Failed to parse x '" + date + "' to Date with format " + __data_x_format);
-                }
+                parsedDate = dataTimeFormat(__data_x_format).parse(date);
+            }
+            if (!parsedDate || isNaN(+parsedDate)) {
+                window.console.error("Failed to parse x '" + date + "' to Date object");
             }
             return parsedDate;
         }
@@ -2453,7 +2430,7 @@
         //-- Selection --//
 
         function selectPoint(target, d, i) {
-            __data_onselected(d, target.node());
+            __data_onselected.call(c3, d, target.node());
             // add selected-circle on low layer g
             main.select('.' + CLASS.selectedCircles + getTargetSelectorSuffix(d.id)).selectAll('.' + CLASS.selectedCircle + '-' + i)
                 .data([d])
@@ -2467,7 +2444,7 @@
                 .attr("r", pointSelectR);
         }
         function unselectPoint(target, d, i) {
-            __data_onunselected(d, target.node());
+            __data_onunselected.call(c3, d, target.node());
             // remove selected-circle from low layer g
             main.select('.' + CLASS.selectedCircles + getTargetSelectorSuffix(d.id)).selectAll('.' + CLASS.selectedCircle + '-' + i)
               .transition().duration(100).attr('r', 0)
@@ -2478,11 +2455,11 @@
         }
 
         function selectBar(target, d) {
-            __data_onselected(d, target.node());
+            __data_onselected.call(c3, d, target.node());
             target.transition().duration(100).style("fill", function () { return d3.rgb(color(d)).brighter(0.75); });
         }
         function unselectBar(target, d) {
-            __data_onunselected(d, target.node());
+            __data_onunselected.call(c3, d, target.node());
             target.transition().duration(100).style("fill", function () { return color(d); });
         }
         function toggleBar(selected, target, d, i) {
@@ -2923,8 +2900,8 @@
             // Define svgs
             svg = selectChart.append("svg")
                 .style("overflow", "hidden")
-                .on('mouseenter', __onmouseover)
-                .on('mouseleave', __onmouseout);
+                .on('mouseenter', function () { return __onmouseover.call(c3); })
+                .on('mouseleave', function () { return __onmouseout.call(c3); });
 
             // Define defs
             defs = svg.append("defs");
@@ -2968,6 +2945,11 @@
                 .attr("text-anchor", "middle") // horizontal centering of text at x position in all browsers.
                 .attr("dominant-baseline", "middle"); // vertical centering of text at y position in all browsers, except IE.
 
+            // Regions
+            main.append('g')
+                .attr("clip-path", clipPath)
+                .attr("class", CLASS.regions);
+
             // Grids
             grid = main.append('g')
                 .attr("clip-path", clipPath)
@@ -2990,11 +2972,6 @@
                 grid.append('g').attr('class', CLASS.ygrids);
             }
             grid.append('g').attr('class', CLASS.ygridLines);
-
-            // Regions
-            main.append('g')
-                .attr("clip-path", clipPath)
-                .attr("class", CLASS.regions);
 
             // Define g for chart area
             main.append('g')
@@ -3059,7 +3036,7 @@
                 .attr("class", CLASS.chartTexts);
 
             // if zoom privileged, insert rect to forefront
-            main.insert('rect', __zoom_privileged ? null : 'g.' + CLASS.grid)
+            main.insert('rect', __zoom_privileged ? null : 'g.' + CLASS.regions)
                 .attr('class', CLASS.zoomRect)
                 .attr('width', width)
                 .attr('height', height)
@@ -3169,11 +3146,15 @@
                 window.onresize = generateResize();
             }
             if (window.onresize.add) {
-                window.onresize.add(__onresize);
+                window.onresize.add(function () {
+                    __onresize.call(c3);
+                });
                 window.onresize.add(function () {
                     c3.flush();
                 });
-                window.onresize.add(__onresized);
+                window.onresize.add(function () {
+                    __onresized.call(c3);
+                });
             }
 
             // export element of the chart
@@ -3213,7 +3194,7 @@
 
                     // Call event handler
                     main.selectAll('.' + CLASS.shape + '-' + index).each(function (d) {
-                        __data_onmouseover(d);
+                        __data_onmouseover.call(c3, d);
                     });
                 })
                 .on('mouseout', function (d) {
@@ -3226,7 +3207,7 @@
                     unexpandBars();
                     // Call event handler
                     main.selectAll('.' + CLASS.shape + '-' + index).each(function (d) {
-                        __data_onmouseout(d);
+                        __data_onmouseout.call(c3, d);
                     });
                 })
                 .on('mousemove', function (d) {
@@ -3352,12 +3333,12 @@
                     if (dist(closest, mouse) < 100) {
                         svg.select('.' + CLASS.eventRect).style('cursor', 'pointer');
                         if (!mouseover) {
-                            __data_onmouseover(closest);
+                            __data_onmouseover.call(c3, closest);
                             mouseover = true;
                         }
                     } else {
                         svg.select('.' + CLASS.eventRect).style('cursor', null);
-                        __data_onmouseout(closest);
+                        __data_onmouseout.call(c3, closest);
                         mouseover = false;
                     }
                 })
@@ -3414,7 +3395,7 @@
                     shape.classed(CLASS.SELECTED, !isSelected);
                     toggle(!isSelected, shape, d, i);
                 }
-                __data_onclick(d, that);
+                __data_onclick.call(c3, d, that);
             }
         }
 
@@ -3483,7 +3464,7 @@
                 .attr('class', CLASS.dragarea)
                 .style('opacity', 0.1);
             dragging = true;
-            __data_ondragstart();
+            __data_ondragstart.call(c3);
         }
 
         function dragend() {
@@ -3496,7 +3477,7 @@
             main.selectAll('.' + CLASS.shape)
                 .classed(CLASS.INCLUDED, false);
             dragging = false;
-            __data_ondragend();
+            __data_ondragend.call(c3);
         }
 
         function smoothLines(el, type) {
@@ -3647,7 +3628,7 @@
                 } : {
                     'x1': function (d) { return x(d) + tickOffset; },
                     'x2': function (d) { return x(d) + tickOffset; },
-                    'y1': margin.top,
+                    'y1': 0,
                     'y2': height
                 };
                 // this is used to flow
@@ -3824,41 +3805,38 @@
                     }
                     this._current = d;
                 })
-                .on('mouseover', function (d, i) {
-                    var updated, arcData, callback;
+                .on('mouseover', function (d) {
+                    var updated, arcData;
                     if (transiting) { // skip while transiting
                         return;
                     }
                     updated = updateAngle(d);
                     arcData = convertToArcData(updated);
-                    callback = getArcOnMouseOver();
                     // transitions
                     expandArc(updated.data.id);
                     toggleFocusLegend(updated.data.id, true);
-                    callback(arcData, i);
+                    __data_onmouseover.call(c3, arcData, this);
                 })
                 .on('mousemove', function (d) {
                     var updated = updateAngle(d), arcData = convertToArcData(updated), selectedData = [arcData];
                     showTooltip(selectedData, d3.mouse(this));
                 })
-                .on('mouseout', function (d, i) {
-                    var updated, arcData, callback;
+                .on('mouseout', function (d) {
+                    var updated, arcData;
                     if (transiting) { // skip while transiting
                         return;
                     }
                     updated = updateAngle(d);
                     arcData = convertToArcData(updated);
-                    callback = getArcOnMouseOut();
                     // transitions
                     unexpandArc(updated.data.id);
                     revertLegend();
                     hideTooltip();
-                    callback(arcData, i);
+                    __data_onmouseout.call(c3, arcData, this);
                 })
                 .on('click', function (d, i) {
-                    var updated = updateAngle(d), arcData = convertToArcData(updated), callback = getArcOnClick();
-                    toggleShape(this, d, i);
-                    callback(arcData, i);
+                    var updated = updateAngle(d), arcData = convertToArcData(updated);
+                    toggleShape(this, arcData, i); // onclick called in toogleShape()
                 });
             mainArc
                 .attr("transform", function (d) { return !isGaugeType(d.data) && withTransform ? "scale(0)" : ""; })
@@ -4317,6 +4295,7 @@
             options.withUpdateXDomain = true;
             options.withUpdateOrgXDomain = true;
             options.withTransitionForExit = false;
+            options.withTransitionForTransform = getOption(options, "withTransitionForTransform", options.withTransition);
             // MEMO: this needs to be called before updateLegend and it means this ALWAYS needs to be called)
             updateSizes();
             // MEMO: called in updateLegend in redraw if withLegend
@@ -4326,7 +4305,7 @@
                 updateScales();
                 updateSvgSize();
                 // Update g positions
-                transformAll(options.withTransition, transitions);
+                transformAll(options.withTransitionForTransform, transitions);
             }
             // Draw with new sizes & scales
             redraw(options, transitions);
@@ -4445,27 +4424,29 @@
         }
 
         function load(targets, args) {
-            // filter loading targets if needed
-            if (args.filter) {
-                targets = targets.filter(args.filter);
-            }
-            // set type if args.types || args.type specified
-            if (args.type || args.types) {
-                targets.forEach(function (t) {
-                    args.types ? setTargetType(t.id, args.types[t.id]) : setTargetType(t.id, args.type);
-                });
-            }
-            // Update/Add data
-            c3.data.targets.forEach(function (d) {
-                for (var i = 0; i < targets.length; i++) {
-                    if (d.id === targets[i].id) {
-                        d.values = targets[i].values;
-                        targets.splice(i, 1);
-                        break;
-                    }
+            if (targets) {
+                // filter loading targets if needed
+                if (args.filter) {
+                    targets = targets.filter(args.filter);
                 }
-            });
-            c3.data.targets = c3.data.targets.concat(targets); // add remained
+                // set type if args.types || args.type specified
+                if (args.type || args.types) {
+                    targets.forEach(function (t) {
+                        args.types ? setTargetType(t.id, args.types[t.id]) : setTargetType(t.id, args.type);
+                    });
+                }
+                // Update/Add data
+                c3.data.targets.forEach(function (d) {
+                    for (var i = 0; i < targets.length; i++) {
+                        if (d.id === targets[i].id) {
+                            d.values = targets[i].values;
+                            targets.splice(i, 1);
+                            break;
+                        }
+                    }
+                });
+                c3.data.targets = c3.data.targets.concat(targets); // add remained
+            }
 
             // Set targets
             updateTargets(c3.data.targets);
@@ -4478,23 +4459,25 @@
             }
         }
         function loadFromArgs(args) {
-            // load data
-            if ('data' in args) {
+            if (args.data) {
                 load(convertDataToTargets(args.data), args);
             }
-            else if ('url' in args) {
+            else if (args.url) {
                 d3.csv(args.url, function (error, data) {
                     load(convertDataToTargets(data), args);
                 });
             }
-            else if ('rows' in args) {
+            else if (args.json) {
+                load(convertDataToTargets(convertJsonToData(args.json, args.keys)), args);
+            }
+            else if (args.rows) {
                 load(convertDataToTargets(convertRowsToData(args.rows)), args);
             }
-            else if ('columns' in args) {
+            else if (args.columns) {
                 load(convertDataToTargets(convertColumnsToData(args.columns)), args);
             }
             else {
-                throw Error('url or rows or columns is required.');
+                load(null, args);
             }
         }
 
@@ -4668,7 +4651,7 @@
                 .style('visibility', function (id) { return isLegendToShow(id) ? 'visible' : 'hidden'; })
                 .style('cursor', 'pointer')
                 .on('click', function (id) {
-                    typeof __legend_item_onclick === 'function' ? __legend_item_onclick(id) : c3.toggle(id);
+                    typeof __legend_item_onclick === 'function' ? __legend_item_onclick.call(c3, id) : c3.toggle(id);
                 })
                 .on('mouseover', function (id) {
                     d3.select(this).classed(CLASS.legendItemFocused, true);
@@ -4676,7 +4659,7 @@
                         c3.focus(id);
                     }
                     if (typeof __legend_item_onmouseover === 'function') {
-                        __legend_item_onmouseover(id);
+                        __legend_item_onmouseover.call(c3, id);
                     }
                 })
                 .on('mouseout', function (id) {
@@ -4685,7 +4668,7 @@
                         c3.revert();
                     }
                     if (typeof __legend_item_onmouseout === 'function') {
-                        __legend_item_onmouseout(id);
+                        __legend_item_onmouseout.call(c3, id);
                     }
                 });
             l.append('text')
@@ -4798,10 +4781,12 @@
             }
         }
         function transformTo(targetIds, type, optionsForRedraw) {
-            var withTransitionForAxis = !hasArcType(c3.data.targets);
+            var withTransitionForAxis = !hasArcType(c3.data.targets),
+                options = optionsForRedraw || {withTransitionForAxis: withTransitionForAxis};
+            options.withTransitionForTransform = false;
             transiting = false;
             setTargetType(targetIds, type);
-            updateAndRedraw(optionsForRedraw || {withTransitionForAxis: withTransitionForAxis});
+            updateAndRedraw(options);
         }
 
         c3.focus = function (targetId) {
@@ -5216,6 +5201,20 @@
             });
             redraw({withLegend: true});
             return __data_colors;
+        };
+
+        c3.category = function (i, category) {
+            if (arguments.length > 1) {
+                __axis_x_categories[i] = category;
+                redraw();
+            }
+            return __axis_x_categories[i];
+        };
+        c3.categories = function (categories) {
+            if (!arguments.length) { return __axis_x_categories; }
+            __axis_x_categories = categories;
+            redraw();
+            return __axis_x_categories;
         };
 
         c3.color = color;
