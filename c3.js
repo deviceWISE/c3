@@ -505,10 +505,10 @@
             }
 
             laneMargin = {
-              top: __lane_margins.top,
-              right: __lane_margins.right,
-              bottom: __lane_margins.bottom,
-              left: __lane_margins.left
+                top: __lane_margins.top,
+                right: __lane_margins.right,
+                bottom: __lane_margins.bottom,
+                left: __lane_margins.left
             };
 
             // for legend
@@ -2749,20 +2749,20 @@
                 barW = (__lane_combine ? height : (height / barTargetsNum)) - (laneMargin.top + laneMargin.bottom),
                 barX = getShapeX(0, barTargetsNum, timelineIndices, !!isSub),
                 barY = function (d) {
-                  if (__lane_combine) {
-                    return laneMargin.top;
-                  }
-                  return d3.round((height / barTargetsNum) * timelineIndices[d.id]) + laneMargin.top;
+                    if (__lane_combine) {
+                        return laneMargin.top;
+                    }
+                    return d3.round((height / barTargetsNum) * timelineIndices[d.id]) + laneMargin.top;
                 },
                 barOffset = getShapeX(0, barTargetsNum, timelineIndices, !!isSub);
             return function (d, i) {
                 var d2 = d;
-                if (i+1 < c3.data.targets[timelineIndices[d.id]].values.length) {
-                  for (var tI = 0; tI < timelineIndices.__max__+1; tI++) {
-                    if (c3.data.targets[tI].values[i+1].value && c3.data.targets[tI].values[i+1].value !== 0) {
-                      d2 = c3.data.targets[tI].values[i+1];
+                if (i + 1 < c3.data.targets[timelineIndices[d.id]].values.length) {
+                    for (var tI = 0; tI < timelineIndices.__max__ + 1; tI++) {
+                        if (c3.data.targets[tI].values[i + 1].value && c3.data.targets[tI].values[i + 1].value !== 0) {
+                            d2 = c3.data.targets[tI].values[i + 1];
+                        }
                     }
-                  }
                 }
                 var offset = barOffset(d2),
                     posX = barX(d),
@@ -3100,22 +3100,22 @@
                 .attr("height", height)
                 .selectAll();
             if (hasTimelineType(c3.data.targets)) {
-              if (__lane_combine) {
-                lanes.data(c3.data.targets).enter().append("line")
-                    .attr("class", CLASS.chartLane)
-                    .attr('x1', 0)
-                    .attr('y1', 0.5)
-                    .attr('x2', width)
-                    .attr('y2', 0.5);
-              }
-              else {
-                lanes.data(c3.data.targets).enter().append("line")
-                    .attr("class", CLASS.chartLane)
-                    .attr('x1', 0)
-                    .attr('y1', function(d, i) { return d3.round(((height / c3.data.targets.length) * i)) + 0.5; })
-                    .attr('x2', width)
-                    .attr('y2', function(d, i) { return d3.round(((height / c3.data.targets.length) * i)) + 0.5; });
-              }
+                if (__lane_combine) {
+                    lanes.data(c3.data.targets).enter().append("line")
+                        .attr("class", CLASS.chartLane)
+                        .attr('x1', 0)
+                        .attr('y1', 0.5)
+                        .attr('x2', width)
+                        .attr('y2', 0.5);
+                }
+                else {
+                    lanes.data(c3.data.targets).enter().append("line")
+                        .attr("class", CLASS.chartLane)
+                        .attr('x1', 0)
+                        .attr('y1', function (d, i) { return d3.round(((height / c3.data.targets.length) * i)) + 0.5; })
+                        .attr('x2', width)
+                        .attr('y2', function (d, i) { return d3.round(((height / c3.data.targets.length) * i)) + 0.5; });
+                }
             }
 
             // Define g for line chart area
@@ -3201,29 +3201,29 @@
                 .style("text-anchor", textAnchorForYAxisLabel);
 
             if (hasTimelineType(c3.data.targets)) {
-              lane_labels = axes.y.selectAll();
-              if (__lane_combine) {
-                lane_labels.data([{id:'timeline'}]).enter().append('g')
-                  .attr('class', 'lane')
-                  .attr('transform', '')
-                  .style('opacity', 1)
-                  .append('text')
-                    .text(function (d) { return d.id; })
-                    .attr('x', function () { return (0.5 + this.getBoundingClientRect().width) * -1; })
-                    .attr('y', function () { return d3.round(height/2); })
-                    .attr("dy", ".32em");
-              }
-              else {
-                lane_labels.data(c3.data.targets).enter().append('g')
-                  .attr('class', 'lane')
-                  .attr('transform', '')
-                  .style('opacity', 1)
-                  .append('text')
-                    .text(function (d) { return d.id; })
-                    .attr('x', function () { return (5 + this.getBoundingClientRect().width) * -1; })
-                    .attr('y', function (d, i) { return d3.round( ((height / c3.data.targets.length) * i) + (height / c3.data.targets.length)/2); })
-                    .attr("dy", ".32em");
-              }
+                lane_labels = axes.y.selectAll();
+                if (__lane_combine) {
+                    lane_labels.data([{id: 'timeline'}]).enter().append('g')
+                        .attr('class', 'lane')
+                        .attr('transform', '')
+                        .style('opacity', 1)
+                        .append('text')
+                          .text(function (d) { return d.id; })
+                          .attr('x', function () { return (0.5 + this.getBoundingClientRect().width) * -1; })
+                          .attr('y', function () { return d3.round(height / 2); })
+                          .attr("dy", ".32em");
+                }
+                else {
+                    lane_labels.data(c3.data.targets).enter().append('g')
+                        .attr('class', 'lane')
+                        .attr('transform', '')
+                        .style('opacity', 1)
+                        .append('text')
+                          .text(function (d) { return d.id; })
+                          .attr('x', function () { return (5 + this.getBoundingClientRect().width) * -1; })
+                          .attr('y', function (d, i) { return d3.round(((height / c3.data.targets.length) * i) + (height / c3.data.targets.length) / 2); })
+                          .attr("dy", ".32em");
+                }
             }
 
             axes.y2 = main.append("g")
@@ -3657,11 +3657,12 @@
         function redraw(options, transitions) {
             var xgrid, xgridAttr, xgridData, xgridLines, xgridLine, ygrid, ygridLines, ygridLine, flushXGrid;
             var mainLine, mainArea, mainCircle, mainBar, mainArc, mainRegion, mainText, mainTimelineBar, contextLine,  contextArea, contextBar, eventRect, eventRectUpdate;
-            var areaIndices = getShapeIndices(isAreaType), barIndices = getShapeIndices(isBarType), lineIndices = getShapeIndices(isLineType), timelineIndices = getShapeIndices(isTimelineType), maxDataCountTarget, tickOffset;
+            var areaIndices = getShapeIndices(isAreaType), barIndices = getShapeIndices(isBarType), lineIndices = getShapeIndices(isLineType), timelineIndices = getShapeIndices(isTimelineType),
+                maxDataCountTarget, tickOffset;
             var rectX, rectW;
             var withY, withSubchart, withTransition, withTransitionForExit, withTransitionForAxis, withTransform, withUpdateXDomain, withUpdateOrgXDomain, withLegend;
             var hideAxis = hasArcType(c3.data.targets);
-            var drawArea, drawAreaOnSub, drawBar, drawBarOnSub, drawLine, drawLineOnSub, drawTimelineBar, drawTimelineOnSub, xForText, yForText;
+            var drawArea, drawAreaOnSub, drawBar, drawBarOnSub, drawLine, drawLineOnSub, drawTimelineBar, xForText, yForText;
             var duration, durationForExit, durationForAxis, waitForDraw;
             var targetsToShow = filterTargetsToShow(c3.data.targets), tickValues, i, intervalForCulling;
 
@@ -3899,8 +3900,7 @@
                 .data(timelineBarData);
             mainTimelineBar.enter().append('path')
                 .attr("class", classLane)
-                .style("stroke", function (d) { return color(d.id); })
-                .style("stroke-width", 0.1)
+                .style("stroke-width", 0)
                 .style("fill", function (d) { return color(d.id); })
                 .style("fill-opacity", function () { if (__color_opacity) { return __color_opacity; } return initialOpacity; }); // not accepted by Masayuki Tanaka; DeviceWise only.
             mainTimelineBar
@@ -4206,7 +4206,7 @@
                 transitions.push(mainTimelineBar.transition()
                     .attr('d', drawTimelineBar)
                     .style("fill", color)
-                    .style("opacity", function (d) { return d.value === 0 ? 0 : 1}));
+                    .style("opacity", function (d) { return d.value === 0 ? 0 : 1; }));
                 transitions.push(mainBar.transition()
                     .attr('d', drawBar)
                     .style("fill", color)
@@ -5611,8 +5611,7 @@
                     // MEMO: No exit transition. The reason is this transition affects max tick width calculation because old tick will be included in the ticks.
                     tickExit = tick.exit().remove(),
                     tickUpdate = d3.transition(tick).style("opacity", 1),
-                    tickTransform, tickX,
-                    lanes = g.selectAll(".lane");
+                    tickTransform, tickX;
 
                 var range = scale.rangeExtent ? scale.rangeExtent() : scaleExtent(scale.range()),
                     path = g.selectAll(".domain").data([ 0 ]),
