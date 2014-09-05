@@ -10,6 +10,8 @@
     var CLASS = {
         target: 'c3-target',
         chart : 'c3-chart',
+        chartLane: 'c3-chart-lane',
+        chartLanes: 'c3-chart-lanes',
         chartLine: 'c3-chart-line',
         chartLines: 'c3-chart-lines',
         chartBar: 'c3-chart-bar',
@@ -38,6 +40,8 @@
         tooltipName: 'c3-tooltip-name',
         shape: 'c3-shape',
         shapes: 'c3-shapes',
+        lane: 'c3-lane',
+        lanes: 'c3-lanes',
         line: 'c3-line',
         lines: 'c3-lines',
         bar: 'c3-bar',
@@ -238,6 +242,9 @@
             __axis_y2_padding = getConfig(['axis', 'y2', 'padding']),
             __axis_y2_ticks = getConfig(['axis', 'y2', 'ticks'], 10);
 
+        var __lane_combine = getConfig(['lane', 'combine'], false),
+            __lane_margins = getConfig(['lane', 'margins'], { top: 5, right: 0, bottom: 5, left: 0 });
+
         // grid
         var __grid_x_show = getConfig(['grid', 'x', 'show'], false),
             __grid_x_type = getConfig(['grid', 'x', 'type'], 'tick'),
@@ -366,7 +373,7 @@
 
         /*-- Set Chart Params --*/
 
-        var margin, margin2, margin3, width, width2, height, height2, currentWidth, currentHeight;
+        var laneMargin, margin, margin2, margin3, width, width2, height, height2, currentWidth, currentHeight;
         var radius, radiusExpanded, innerRadius, arcWidth, arcHeight, svgArc, svgArcExpanded, svgArcExpandedSub, pie;
         var xMin, xMax, yMin, yMax, subXMin, subXMax, subYMin, subYMax;
         var x, y, y2, subX, subY, subY2, xAxis, yAxis, y2Axis, subXAxis;
@@ -496,6 +503,14 @@
                     left: margin.left
                 };
             }
+
+            laneMargin = {
+              top: __lane_margins.top,
+              right: __lane_margins.right,
+              bottom: __lane_margins.bottom,
+              left: __lane_margins.left
+            };
+
             // for legend
             var insetLegendPosition = {
                 top: isLegendTop ? getCurrentPaddingTop() + __legend_inset_y + 5.5 : currentHeight - legendHeight - getCurrentPaddingBottom() - __legend_inset_y,
@@ -1822,6 +1837,8 @@
         function classTexts(d) { return generateClass(CLASS.texts, d.id); }
         function classShape(d) { return generateClass(CLASS.shape, d.index); }
         function classShapes(d) { return generateClass(CLASS.shapes, d.id); }
+        function classLane(d) { return classShape(d) + generateClass(CLASS.lane, d.id); }
+        function classLanes(d) { return classShapes(d) + generateClass(CLASS.lanes, d.id); }
         function classLine(d) { return classShape(d) + generateClass(CLASS.line, d.id); }
         function classLines(d) { return classShapes(d) + generateClass(CLASS.lines, d.id); }
         function classCircle(d) { return classShape(d) + generateClass(CLASS.circle, d.index); }
@@ -2211,6 +2228,9 @@
         function hasScatterType(targets) {
             return hasType(targets, 'scatter');
         }
+        function hasTimelineType(targets) {
+            return hasType(targets, 'timeline');
+        }
         function hasPieType(targets) {
             return __data_type === 'pie' || hasType(targets, 'pie');
         }
@@ -2234,6 +2254,10 @@
         function isSplineType(d) {
             var id = (typeof d === 'string') ? d : d.id;
             return ['spline', 'area-spline'].indexOf(__data_types[id]) >= 0;
+        }
+        function isTimelineType(d) {
+            var id = (typeof d === 'string') ? d : d.id;
+            return ['timeline', 'timeline-gantt'].indexOf(__data_types[id]) >= 0;
         }
         function isAreaType(d) {
             var id = (typeof d === 'string') ? d : d.id;
@@ -2273,6 +2297,9 @@
             return isScatterType(d) ? d.values : [];
         }
         */
+        function timelineBarData(d) {
+            return isTimelineType(d) ? d.values : [];
+        }
         function barData(d) {
             return isBarType(d) ? d.values : [];
         }
@@ -2556,7 +2583,7 @@
 
             area = __axis_rotated ? area.x0(value0).x1(value1).y(xx) : area.x(xx).y0(value0).y1(value1);
             if (!__line_connect_null) { area = area.defined(function (d) { return d.value !== null; }); }
-            
+
             return function (d) {
                 var data = __line_connect_null ? filterRemoveNull(d.values):d.values, x0 = 0, y0 = 0, path;
 
@@ -2613,6 +2640,26 @@
                 // switch points if axis is rotated, not applicable for sub chart
                 var indexX = __axis_rotated ? 1 : 0;
                 var indexY = __axis_rotated ? 0 : 1;
+
+                var path = 'M ' + points[0][indexX] + ',' + points[0][indexY] + ' ' +
+                        'L' + points[1][indexX] + ',' + points[1][indexY] + ' ' +
+                        'L' + points[2][indexX] + ',' + points[2][indexY] + ' ' +
+                        'L' + points[3][indexX] + ',' + points[3][indexY] + ' ' +
+                        'z';
+
+                return path;
+            };
+        }
+
+        function generateDrawTimelineBar(timelineIndicies, isSub) {
+            var getPoints = generateGetTimelineBarPoints(timelineIndicies, isSub);
+            return function (d, i) {
+                // 4 points that make a bar
+                var points = getPoints(d, i);
+
+                // switch points if axis is rotated, not applicable for sub chart
+                var indexX = 0;
+                var indexY = 1;
 
                 var path = 'M ' + points[0][indexX] + ',' + points[0][indexY] + ' ' +
                         'L' + points[1][indexX] + ',' + points[1][indexY] + ' ' +
@@ -2693,6 +2740,40 @@
                     [posX, posY - (y0 - offset)],
                     [posX + barW, posY - (y0 - offset)],
                     [posX + barW, offset]
+                ];
+            };
+        }
+
+        function generateGetTimelineBarPoints(timelineIndices, isSub) {
+            var barTargetsNum = timelineIndices.__max__ + 1,
+                barW = (__lane_combine ? height : (height / barTargetsNum)) - (laneMargin.top + laneMargin.bottom),
+                barX = getShapeX(0, barTargetsNum, timelineIndices, !!isSub),
+                barY = function (d) {
+                  if (__lane_combine) {
+                    return laneMargin.top;
+                  }
+                  return d3.round((height / barTargetsNum) * timelineIndices[d.id]) + laneMargin.top;
+                },
+                barOffset = getShapeX(0, barTargetsNum, timelineIndices, !!isSub);
+            return function (d, i) {
+                var d2 = d;
+                if (i+1 < c3.data.targets[timelineIndices[d.id]].values.length) {
+                  for (var tI = 0; tI < timelineIndices.__max__+1; tI++) {
+                    if (c3.data.targets[tI].values[i+1].value && c3.data.targets[tI].values[i+1].value !== 0) {
+                      d2 = c3.data.targets[tI].values[i+1];
+                    }
+                  }
+                }
+                var offset = barOffset(d2),
+                    posX = barX(d),
+                    posY = barY(d);
+
+                // 4 points that make a bar
+                return [
+                    [posX, posY],
+                    [posX, posY + barW],
+                    [offset, posY + barW],
+                    [offset, posY]
                 ];
             };
         }
@@ -2877,7 +2958,7 @@
         }
 
         function init(data) {
-            var arcs, eventRect, grid, i, binding = true;
+            var arcs, eventRect, grid, i, lane_labels, lanes, binding = true;
 
             selectChart = d3.select(__bindto);
             if (selectChart.empty()) {
@@ -3012,6 +3093,31 @@
             main.select('.' + CLASS.chart).append("g")
                 .attr("class", CLASS.chartBars);
 
+            // Define g for timeline chart lanes
+            lanes = main.select('.' + CLASS.chart).append("g")
+                .attr("class", CLASS.chartLanes)
+                .attr("width", width)
+                .attr("height", height)
+                .selectAll();
+            if (hasTimelineType(c3.data.targets)) {
+              if (__lane_combine) {
+                lanes.data(c3.data.targets).enter().append("line")
+                    .attr("class", CLASS.chartLane)
+                    .attr('x1', 0)
+                    .attr('y1', 0.5)
+                    .attr('x2', width)
+                    .attr('y2', 0.5);
+              }
+              else {
+                lanes.data(c3.data.targets).enter().append("line")
+                    .attr("class", CLASS.chartLane)
+                    .attr('x1', 0)
+                    .attr('y1', function(d, i) { return d3.round(((height / c3.data.targets.length) * i)) + 0.5; })
+                    .attr('x2', width)
+                    .attr('y2', function(d, i) { return d3.round(((height / c3.data.targets.length) * i)) + 0.5; });
+              }
+            }
+
             // Define g for line chart area
             main.select('.' + CLASS.chart).append("g")
                 .attr("class", CLASS.chartLines);
@@ -3093,6 +3199,32 @@
                 .attr("class", CLASS.axisYLabel)
                 .attr("transform", __axis_rotated ? "" : "rotate(-90)")
                 .style("text-anchor", textAnchorForYAxisLabel);
+
+            if (hasTimelineType(c3.data.targets)) {
+              lane_labels = axes.y.selectAll();
+              if (__lane_combine) {
+                lane_labels.data([{id:'timeline'}]).enter().append('g')
+                  .attr('class', 'lane')
+                  .attr('transform', '')
+                  .style('opacity', 1)
+                  .append('text')
+                    .text(function (d) { return d.id; })
+                    .attr('x', function () { return (0.5 + this.getBoundingClientRect().width) * -1; })
+                    .attr('y', function () { return d3.round(height/2); })
+                    .attr("dy", ".32em");
+              }
+              else {
+                lane_labels.data(c3.data.targets).enter().append('g')
+                  .attr('class', 'lane')
+                  .attr('transform', '')
+                  .style('opacity', 1)
+                  .append('text')
+                    .text(function (d) { return d.id; })
+                    .attr('x', function () { return (5 + this.getBoundingClientRect().width) * -1; })
+                    .attr('y', function (d, i) { return d3.round( ((height / c3.data.targets.length) * i) + (height / c3.data.targets.length)/2); })
+                    .attr("dy", ".32em");
+              }
+            }
 
             axes.y2 = main.append("g")
                 .attr("class", CLASS.axis + ' ' + CLASS.axisY2)
@@ -3524,12 +3656,12 @@
 
         function redraw(options, transitions) {
             var xgrid, xgridAttr, xgridData, xgridLines, xgridLine, ygrid, ygridLines, ygridLine, flushXGrid;
-            var mainLine, mainArea, mainCircle, mainBar, mainArc, mainRegion, mainText, contextLine,  contextArea, contextBar, eventRect, eventRectUpdate;
-            var areaIndices = getShapeIndices(isAreaType), barIndices = getShapeIndices(isBarType), lineIndices = getShapeIndices(isLineType), maxDataCountTarget, tickOffset;
+            var mainLine, mainArea, mainCircle, mainBar, mainArc, mainRegion, mainText, mainTimelineBar, contextLine,  contextArea, contextBar, eventRect, eventRectUpdate;
+            var areaIndices = getShapeIndices(isAreaType), barIndices = getShapeIndices(isBarType), lineIndices = getShapeIndices(isLineType), timelineIndices = getShapeIndices(isTimelineType), maxDataCountTarget, tickOffset;
             var rectX, rectW;
             var withY, withSubchart, withTransition, withTransitionForExit, withTransitionForAxis, withTransform, withUpdateXDomain, withUpdateOrgXDomain, withLegend;
             var hideAxis = hasArcType(c3.data.targets);
-            var drawArea, drawAreaOnSub, drawBar, drawBarOnSub, drawLine, drawLineOnSub, xForText, yForText;
+            var drawArea, drawAreaOnSub, drawBar, drawBarOnSub, drawLine, drawLineOnSub, drawTimelineBar, drawTimelineOnSub, xForText, yForText;
             var duration, durationForExit, durationForAxis, waitForDraw;
             var targetsToShow = filterTargetsToShow(c3.data.targets), tickValues, i, intervalForCulling;
 
@@ -3620,6 +3752,7 @@
             drawArea = generateDrawArea(areaIndices, false);
             drawBar = generateDrawBar(barIndices);
             drawLine = generateDrawLine(lineIndices, false);
+            drawTimelineBar = generateDrawTimelineBar(timelineIndices, false);
             xForText = generateXYForText(barIndices, true);
             yForText = generateXYForText(barIndices, false);
 
@@ -3758,6 +3891,21 @@
             mainBar
                 .style("opacity", initialOpacity);
             mainBar.exit().transition().duration(durationForExit)
+                .style('opacity', 0)
+                .remove();
+
+            // timeline
+            mainTimelineBar = main.selectAll('.' + CLASS.lanes).selectAll('.' + CLASS.bar)
+                .data(timelineBarData);
+            mainTimelineBar.enter().append('path')
+                .attr("class", classLane)
+                .style("stroke", function (d) { return color(d.id); })
+                .style("stroke-width", 0.1)
+                .style("fill", function (d) { return color(d.id); })
+                .style("fill-opacity", function () { if (__color_opacity) { return __color_opacity; } return initialOpacity; }); // not accepted by Masayuki Tanaka; DeviceWise only.
+            mainTimelineBar
+                .style("opacity", initialOpacity);
+            mainTimelineBar.exit().transition().duration(durationForExit)
                 .style('opacity', 0)
                 .remove();
 
@@ -4055,6 +4203,10 @@
             d3.transition().duration(duration).each(function () {
                 var transitions = [];
 
+                transitions.push(mainTimelineBar.transition()
+                    .attr('d', drawTimelineBar)
+                    .style("fill", color)
+                    .style("opacity", function (d) { return d.value === 0 ? 0 : 1}));
                 transitions.push(mainBar.transition()
                     .attr('d', drawBar)
                     .style("fill", color)
@@ -4153,6 +4305,7 @@
 
                 d3.transition().ease('linear').duration(durationForFlow).each(function () {
                     wait.add(axes.x.transition().call(xAxis));
+                    wait.add(mainTimelineBar.transition().attr('transform', transform));
                     wait.add(mainBar.transition().attr('transform', transform));
                     wait.add(mainLine.transition().attr('transform', transform));
                     wait.add(mainArea.transition().attr('transform', transform));
@@ -4190,6 +4343,9 @@
                     xgridLines.select('text')
                         .attr("x", __axis_rotated ? width : 0)
                         .attr("y", xv);
+                    mainTimelineBar
+                        .attr('transform', null)
+                        .attr("d", drawTimelineBar);
                     mainBar
                         .attr('transform', null)
                         .attr("d", drawBar);
@@ -4338,7 +4494,7 @@
         }
 
         function updateTargets(targets) {
-            var mainLineEnter, mainLineUpdate, mainBarEnter, mainBarUpdate, mainPieEnter, mainPieUpdate, mainTextUpdate, mainTextEnter;
+            var mainLineEnter, mainLineUpdate, mainBarEnter, mainBarUpdate, mainTimelineBarEnter, mainTimelineBarUpdate, mainPieEnter, mainPieUpdate, mainTextUpdate, mainTextEnter;
             var contextLineEnter, contextLineUpdate, contextBarEnter, contextBarUpdate;
 
             /*-- Main --*/
@@ -4352,7 +4508,8 @@
                 .style('opacity', 0)
                 .style("pointer-events", "none");
             mainTextEnter.append('g')
-                .attr('class', classTexts);
+                .attr('class', classTexts)
+                .text(function (d) { return d.id; });
 
             //-- Bar --//
             mainBarUpdate = main.select('.' + CLASS.chartBars).selectAll('.' + CLASS.chartBar)
@@ -4365,6 +4522,19 @@
             // Bars for each data
             mainBarEnter.append('g')
                 .attr("class", classBars)
+                .style("cursor", function (d) { return __data_selection_isselectable(d) ? "pointer" : null; });
+
+            //-- Timeline --//
+            mainTimelineBarUpdate = main.select('.' + CLASS.chartLanes).selectAll('.' + CLASS.chartBar)
+                .data(targets)
+                .attr('class', classChartBar);
+            mainTimelineBarEnter = mainTimelineBarUpdate.enter().append('g')
+                .attr('class', classChartBar)
+                .style('opacity', 0)
+                .style("pointer-events", "none");
+            // Bars for each lane
+            mainTimelineBarEnter.append('g')
+                .attr("class", classLanes)
                 .style("cursor", function (d) { return __data_selection_isselectable(d) ? "pointer" : null; });
 
             //-- Line --//
@@ -5441,7 +5611,8 @@
                     // MEMO: No exit transition. The reason is this transition affects max tick width calculation because old tick will be included in the ticks.
                     tickExit = tick.exit().remove(),
                     tickUpdate = d3.transition(tick).style("opacity", 1),
-                    tickTransform, tickX;
+                    tickTransform, tickX,
+                    lanes = g.selectAll(".lane");
 
                 var range = scale.rangeExtent ? scale.rangeExtent() : scaleExtent(scale.range()),
                     path = g.selectAll(".domain").data([ 0 ]),

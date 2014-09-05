@@ -7,6 +7,9 @@
   fill: none;
   stroke: #000;
 }
+.c3 line.c3-chart-lane {
+  stroke: lightgray;
+}
 .c3 text {
   -webkit-user-select: none;
      -moz-user-select: none;
