@@ -119,6 +119,9 @@ c3_chart_internal_fn.getDefaultConfig = function () {
         axis_y2_tick_count: undefined,
         axis_y2_padding: {},
         axis_y2_default: undefined,
+        // lane
+        lane_combine: false,
+        lane_margins: { top: 5, right: 0, bottom: 5, left: 0 },
         // grid
         grid_x_show: false,
         grid_x_type: 'tick',
