@@ -28,6 +28,9 @@ c3_chart_internal_fn.hasType = function (type, targets) {
 c3_chart_internal_fn.hasArcType = function (targets) {
     return this.hasType('pie', targets) || this.hasType('donut', targets) || this.hasType('gauge', targets);
 };
+c3_chart_internal_fn.hasTimelineType = function (targets) { //console.log('hasTimelineType');
+    return this.hasType('timeline', targets);
+};
 c3_chart_internal_fn.isLineType = function (d) {
     var config = this.config, id = isString(d) ? d : d.id;
     return !config.data_types[id] || ['line', 'spline', 'area', 'area-spline', 'step', 'area-step'].indexOf(config.data_types[id]) >= 0;
@@ -39,6 +42,10 @@ c3_chart_internal_fn.isStepType = function (d) {
 c3_chart_internal_fn.isSplineType = function (d) {
     var id = isString(d) ? d : d.id;
     return ['spline', 'area-spline'].indexOf(this.config.data_types[id]) >= 0;
+};
+c3_chart_internal_fn.isTimelineType = function (d) { //console.log('isTimelineType');
+    var id = isString(d) ? d : d.id;
+    return ['timeline', 'timeline-gantt'].indexOf(this.config.data_types[id]) >= 0;
 };
 c3_chart_internal_fn.isAreaType = function (d) {
     var id = isString(d) ? d : d.id;
@@ -86,4 +93,7 @@ c3_chart_internal_fn.lineOrScatterData = function (d) {
 };
 c3_chart_internal_fn.barOrLineData = function (d) {
     return this.isBarType(d) || this.isLineType(d) ? d.values : [];
+};
+c3_chart_internal_fn.timelineBarData = function (d) { //console.log('timelineBarData');
+    return this.isTimelineType(d) ? d.values : [];
 };

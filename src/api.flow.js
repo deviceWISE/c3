@@ -172,6 +172,7 @@ c3_chart_internal_fn.generateFlow = function (args) {
             mainText = $$.mainText || d3.selectAll([]),
             mainBar = $$.mainBar || d3.selectAll([]),
             mainLine = $$.mainLine || d3.selectAll([]),
+            mainTimeline = $$.mainTimeline || d3.selectAll([]),
             mainArea = $$.mainArea || d3.selectAll([]),
             mainCircle = $$.mainCircle || d3.selectAll([]);
 
@@ -221,6 +222,7 @@ c3_chart_internal_fn.generateFlow = function (args) {
             wait.add($$.axes.x.transition().call($$.xAxis));
             wait.add(mainBar.transition().attr('transform', transform));
             wait.add(mainLine.transition().attr('transform', transform));
+            wait.add(mainTimeline.transition().attr('transform', transform));
             wait.add(mainArea.transition().attr('transform', transform));
             wait.add(mainCircle.transition().attr('transform', transform));
             wait.add(mainText.transition().attr('transform', transform));

@@ -1,6 +1,8 @@
 var CLASS = c3_chart_internal_fn.CLASS = {
     target: 'c3-target',
     chart: 'c3-chart',
+    chartLane: 'c3-chart-lane',
+    chartLanes: 'c3-chart-lanes',
     chartLine: 'c3-chart-line',
     chartLines: 'c3-chart-lines',
     chartBar: 'c3-chart-bar',
@@ -31,6 +33,8 @@ var CLASS = c3_chart_internal_fn.CLASS = {
     tooltipName: 'c3-tooltip-name',
     shape: 'c3-shape',
     shapes: 'c3-shapes',
+    lane: 'c3-lane',
+    lanes: 'c3-lanes',
     line: 'c3-line',
     lines: 'c3-lines',
     bar: 'c3-bar',
@@ -88,6 +92,12 @@ c3_chart_internal_fn.classShape = function (d) {
 };
 c3_chart_internal_fn.classShapes = function (d) {
     return this.generateClass(CLASS.shapes, d.id);
+};
+c3_chart_internal_fn.classLane = function (d) { //console.log('classLane');
+    return c3_chart_internal_fn.classShape(d) + this.generateClass(CLASS.lane, d.index);
+};
+c3_chart_internal_fn.classLanes = function (d) { //console.log('classLanes');
+    return c3_chart_internal_fn.classShapes(d) + this.generateClass(CLASS.lanes, d.id);
 };
 c3_chart_internal_fn.classLine = function (d) {
     return this.classShape(d) + this.generateClass(CLASS.line, d.id);

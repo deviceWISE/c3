@@ -20,6 +20,9 @@ c3_chart_internal_fn.initAxis = function () {
         .attr("transform", config.axis_rotated ? "" : "rotate(-90)")
         .style("text-anchor", $$.textAnchorForYAxisLabel.bind($$));
 
+    if ($$.initTimelineLaneLabels) { $$.initTimelineLaneLabels(); }
+    if ($$.initTimelineLaneAxis) { $$.initTimelineLaneAxis(); }
+
     $$.axes.y2 = main.append("g")
         .attr("class", CLASS.axis + ' ' + CLASS.axisY2)
         // clip-path?
