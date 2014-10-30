@@ -93,7 +93,7 @@
 /*-- Bar --*/
 
 .c3-bar {
-  fill-opacity: 0.75;// Added
+  fill-opacity: 0.75;/* Added */
   stroke-width: 1px;
 }
 .c3-bar._expanded_ {
@@ -216,5 +216,6 @@
   font-size: 28px;
 }
 
-.c3-chart-arc.c3-target g path { opacity: 0.75; }// Added
-.c3-chart-arc.c3-target.c3-focused g path { opacity: 1; }// Added
+.c3-chart-arc.c3-target g path { opacity: 0.75; }/* Added */
+
+.c3-chart-arc.c3-target.c3-focused g path { opacity: 1; }/* Added */
