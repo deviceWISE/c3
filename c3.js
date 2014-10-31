@@ -3062,13 +3062,13 @@
             offset = 0;
         if ($$.hasTimelineType($$.data.targets)) {
             yAxis.selectAll('g').selectAll('text').each(function () {
-                var _x = -1 * this.x.baseVal[0].value;
+                var _x = -1 * d3.select(this).attr('x');
                 if (_x > offset) {
                     offset = _x;
                 }
             });
             $$.main.each(function () {
-                d3.select(this).attr('transform', 'translate(' + 0.5 + offset + ',' + this.transform.baseVal[0].matrix.f + ')');
+                d3.select(this).attr('transform', 'translate(' + 0.5 + offset + ',' + d3.transform(d3.select(this).attr('transform')).translate[1] + ')');
             });
             clipPathYAxis.each(function () {
                 d3.select(this).attr('width', 0.5 + offset);
@@ -3190,13 +3190,13 @@
             offset = 0;
         if ($$.hasTimelineType($$.data.targets)) {
             yAxis.selectAll('g').selectAll('text').each(function () {
-                var _x = -1 * this.x.baseVal[0].value;
+                var _x = -1 * d3.select(this).attr('x');
                 if (_x > offset) {
                     offset = _x;
                 }
             });
             $$.main.each(function () {
-                d3.select(this).attr('transform', 'translate(' + (0.5 + offset) + ',' + this.transform.baseVal[0].matrix.f + ')');
+                d3.select(this).attr('transform', 'translate(' + (0.5 + offset) + ',' + d3.transform(d3.select(this).attr('transform')).translate[1] + ')');
             });
             clipPathYAxis.each(function () {
                 d3.select(this).attr('width', 0.5 + offset);

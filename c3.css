@@ -97,7 +97,7 @@
   stroke-width: 1px;
 }
 .c3-bar._expanded_ {
-  fill-opacity: 1;//0.75;
+  fill-opacity: 1;/* 0.75; */
 }
 
 /*-- Arc --*/
