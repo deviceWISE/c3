@@ -3245,12 +3245,8 @@
             barOffset = $$.getShapeX(0, barTargetsNum, timelineIndices, !!isSub);
         return function (d, i) {
             var d2 = d;
-            if (i + 1 < $$.data.targets[timelineIndices[d.id]].values.length) {
-                for (var tI = 0; tI < timelineIndices.__max__ + 1; tI++) {
-                    if ($$.data.targets[tI].values[i + 1].value && $$.data.targets[tI].values[i + 1].value !== 0) {
-                        d2 = $$.data.targets[tI].values[i + 1];
-                    }
-                }
+            if ($$.data.targets[timelineIndices[d.id]].values[i + 1]) {
+                d2 = $$.data.targets[timelineIndices[d.id]].values[i + 1];
             }
             var offset = barOffset(d2),
                 posX = barX(d),
