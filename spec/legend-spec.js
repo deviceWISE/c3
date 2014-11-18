@@ -23,7 +23,9 @@ describe('c3 chart legend', function () {
         }
         chart = window.c3.generate(args);
         d3 = chart.internal.d3;
-        chart.internal.d3.select('.jasmine_html-reporter').style('display', 'none');
+        chart.internal.d3.select('.jasmine_html-reporter')
+            .style('position', 'absolute')
+            .style('right', 0);
 
         window.setTimeout(function () {
             done();
@@ -80,6 +82,26 @@ describe('c3 chart legend', function () {
         it('should have automatically calculated height', function () {
             var box = d3.select('.c3-legend-background').node().getBoundingClientRect();
             expect(box.height).toBe(48);
+        });
+
+        it('should update args to have only one series', function () {
+            args = {
+                data: {
+                    columns: [
+                        ['data1', 30, 200, 100, 400, 150, 250],
+                    ]
+                },
+                legend: {
+                    position: 'inset'
+                }
+            };
+            expect(true).toBeTruthy();
+        });
+
+        it('should locate legend properly', function () {
+            var box = d3.select('.c3-legend-background').node().getBoundingClientRect();
+            expect(box.height).toBe(28);
+            expect(box.width).toBeGreaterThan(64);
         });
 
     });
