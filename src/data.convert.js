@@ -146,17 +146,6 @@ c3_chart_internal_fn.convertDataToTargets = function (data, appendXs) {
                 if (isUndefined(d[id]) || $$.data.xs[id].length <= i) {
                     x = undefined;
                 }
-                // Find the smallest and largest target values.
-                if (d[id] !== null && !isNaN(d[id])) {
-                    if ($$.targetMax === undefined && $$.targetMin === undefined) {
-                        $$.targetMax = d[id];
-                        $$.targetMin = d[id];
-                    }
-
-                    if (d[id] > $$.targetMax) { $$.targetMax = d[id]; }
-
-                    if (d[id] < $$.targetMin) { $$.targetMin = d[id]; }
-                }
                 return {x: x, value: d[id] !== null && !isNaN(d[id]) ? +d[id] : null, id: convertedId};
             }).filter(function (v) { return isDefined(v.x); })
         };

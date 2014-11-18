@@ -26,8 +26,6 @@ function ChartInternal(api) {
     $$.data = {};
     $$.cache = {};
     $$.axes = {};
-    $$.targetMax;
-    $$.targetMin;
 }
 
 c3.generate = function (config) {

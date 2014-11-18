@@ -31,8 +31,6 @@
         $$.data = {};
         $$.cache = {};
         $$.axes = {};
-        $$.targetMax;
-        $$.targetMin;
     }
     
     c3.generate = function (config) {
@@ -2016,17 +2014,6 @@
                     if (isUndefined(d[id]) || $$.data.xs[id].length <= i) {
                         x = undefined;
                     }
-                    // Find the smallest and largest target values.
-                    if (d[id] !== null && !isNaN(d[id])) {
-                        if ($$.targetMax === undefined && $$.targetMin === undefined) {
-                            $$.targetMax = d[id];
-                            $$.targetMin = d[id];
-                        }
-    
-                        if (d[id] > $$.targetMax) { $$.targetMax = d[id]; }
-    
-                        if (d[id] < $$.targetMin) { $$.targetMin = d[id]; }
-                    }
                     return {x: x, value: d[id] !== null && !isNaN(d[id]) ? +d[id] : null, id: convertedId};
                 }).filter(function (v) { return isDefined(v.x); })
             };
@@ -2919,7 +2906,7 @@
             yScaleGetter = isSub ? $$.getSubYScale : $$.getYScale,
             xValue = function (d) { return (isSub ? $$.subxx : $$.xx).call($$, d); },
             value0 = function (d, i) {
-                return config.data_groups.length > 0 ? getPoints(d, i)[0][1] : yScaleGetter.call($$, d.id)($$.targetMin > 0 ? $$.targetMin : 0);
+                return config.data_groups.length > 0 ? getPoints(d, i)[0][1] : yScaleGetter.call($$, d.id)(0);
             },
             value1 = function (d, i) {
                 return config.data_groups.length > 0 ? getPoints(d, i)[1][1] : yScaleGetter.call($$, d.id)(d.value);
