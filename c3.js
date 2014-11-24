@@ -3,7 +3,7 @@
 
     /*global define, module, exports, require */
 
-    var c3 = { version: "0.4.3" };
+    var c3 = { version: "0.4.4" };
     
     var c3_chart_fn, c3_chart_internal_fn;
     
@@ -113,8 +113,8 @@
         $$.defocusedTargetIds = [];
     
         $$.xOrient = config.axis_rotated ? "left" : "bottom";
-        $$.yOrient = config.axis_rotated ? "bottom" : "left";
-        $$.y2Orient = config.axis_rotated ? "top" : "right";
+        $$.yOrient = config.axis_rotated ? (config.axis_y_inner ? "top" : "bottom") : (config.axis_y_inner ? "right" : "left");
+        $$.y2Orient = config.axis_rotated ? (config.axis_y_inner ? "bottom" : "top") : (config.axis_y_inner ? "left" : "right");
         $$.subXOrient = config.axis_rotated ? "left" : "bottom";
     
         $$.isLegendRight = config.legend_position === 'right';
@@ -141,6 +141,15 @@
         $$.intervalForObserveInserted = undefined;
     
         $$.axes.subx = d3.selectAll([]); // needs when excluding subchart.js
+    };
+    
+    c3_chart_internal_fn.initChartElements = function () {
+        if (this.initBar) { this.initBar(); }
+        if (this.initTimelineLanes) { this.initTimelineLanes(); }
+        if (this.initLine) { this.initLine(); }
+        if (this.initArc) { this.initArc(); }
+        if (this.initGauge) { this.initGauge(); }
+        if (this.initText) { this.initText(); }
     };
     
     c3_chart_internal_fn.initWithData = function (data) {
@@ -170,6 +179,9 @@
         // Set targets to hide if needed
         if (config.data_hide) {
             $$.addHiddenTargetIds(config.data_hide === true ? $$.mapToIds($$.data.targets) : config.data_hide);
+        }
+        if (config.legend_hide) {
+            $$.addHiddenLegendIds(config.legend_hide === true ? $$.mapToIds($$.data.targets) : config.legend_hide);
         }
     
         // when gauge, hide legend // TODO: fix
@@ -245,21 +257,8 @@
         // Cover whole with rects for events
         $$.initEventRect();
     
-        // Define g for bar chart area
-        if ($$.initBar) { $$.initBar(); }
-    
-        // Define g for timeline lane chart area
-        if ($$.initTimelineLanes) { $$.initTimelineLanes(); }
-    
-        // Define g for line chart area
-        if ($$.initLine) { $$.initLine(); }
-    
-        // Define g for arc chart area
-        if ($$.initArc) { $$.initArc(); }
-        if ($$.initGauge) { $$.initGauge(); }
-    
-        // Define g for text area
-        if ($$.initText) { $$.initText(); }
+        // Define g for chart
+        $$.initChartElements();
     
         // if zoom privileged, insert rect to forefront
         // TODO: is this needed?
@@ -442,7 +441,7 @@
         var $$ = this, main = $$.main, d3 = $$.d3, config = $$.config;
         var areaIndices = $$.getShapeIndices($$.isAreaType), barIndices = $$.getShapeIndices($$.isBarType), lineIndices = $$.getShapeIndices($$.isLineType);
         var timelineIndices = $$.getShapeIndices($$.isTimelineType);
-        var withY, withSubchart, withTransition, withTransitionForExit, withTransitionForAxis, withTransform, withUpdateXDomain, withUpdateOrgXDomain, withTrimXDomain, withLegend, withEventRect;
+        var withY, withSubchart, withTransition, withTransitionForExit, withTransitionForAxis, withTransform, withUpdateXDomain, withUpdateOrgXDomain, withTrimXDomain, withLegend, withEventRect, withDimension;
         var hideAxis = $$.hasArcType();
         var drawArea, drawBar, drawLine, drawTimeline, xForText, yForText;
         var duration, durationForExit, durationForAxis;
@@ -460,6 +459,7 @@
         withTrimXDomain = getOption(options, "withTrimXDomain", true);
         withLegend = getOption(options, "withLegend", false);
         withEventRect = getOption(options, "withEventRect", true);
+        withDimension = getOption(options, "withDimension", true);
         withTransitionForExit = getOption(options, "withTransitionForExit", withTransition);
         withTransitionForAxis = getOption(options, "withTransitionForAxis", withTransition);
     
@@ -472,7 +472,7 @@
         // update legend and transform each g
         if (withLegend && config.legend_show) {
             $$.updateLegend($$.mapToIds($$.data.targets), options, transitions);
-        } else if ((!config.axis_rotated && withY) || (config.axis_rotated && withUpdateXDomain)) {
+        } else if (withDimension) {
             // need to update dimension (e.g. axis.y.tick.values) because y tick values should change
             // no need to update axis in it because they will be updated in redraw()
             $$.updateDimension(true);
@@ -749,7 +749,8 @@
         return d.value !== null && this.withoutFadeIn[d.id] ? this.opacityForCircle(d) : 0;
     };
     c3_chart_internal_fn.opacityForCircle = function (d) {
-        return isValue(d.value) && this.config.point_show ? (this.isScatterType(d) ? 0.5 : 1) : 0;
+        var opacity = this.config.point_show ? 1 : 0;
+        return isValue(d.value) ? (this.isScatterType(d) ? 0.5 : opacity) : 0;
     };
     c3_chart_internal_fn.opacityForText = function () {
         return this.hasDataLabel() ? 1 : 0;
@@ -1013,6 +1014,7 @@
             color_threshold: {},
             // legend
             legend_show: true,
+            legend_hide: false,
             legend_position: 'bottom',
             legend_inset_anchor: 'top-left',
             legend_inset_x: 10,
@@ -1050,6 +1052,7 @@
             axis_y_max: undefined,
             axis_y_min: undefined,
             axis_y_center: undefined,
+            axis_y_inner: undefined,
             axis_y_label: {},
             axis_y_tick_format: undefined,
             axis_y_tick_outer: true,
@@ -1063,6 +1066,7 @@
             axis_y2_max: undefined,
             axis_y2_min: undefined,
             axis_y2_center: undefined,
+            axis_y2_inner: undefined,
             axis_y2_label: {},
             axis_y2_tick_format: undefined,
             axis_y2_tick_outer: true,
@@ -1602,10 +1606,12 @@
     };
     c3_chart_internal_fn.updateXs = function () {
         var $$ = this;
-        $$.xs = [];
-        $$.data.targets[0].values.forEach(function (v) {
-            $$.xs[v.index] = v.x;
-        });
+        if ($$.data.targets.length) {
+            $$.xs = [];
+            $$.data.targets[0].values.forEach(function (v) {
+                $$.xs[v.index] = v.x;
+            });
+        }
     };
     c3_chart_internal_fn.getPrevX = function (i) {
         var x = this.xs[i - 1];
@@ -2523,8 +2529,10 @@
             return config.padding_left;
         } else if (config.axis_rotated) {
             return !config.axis_x_show ? 1 : Math.max(ceil10($$.getAxisWidthByAxisId('x', withoutRecompute)), 40);
+        } else if (!config.axis_y_show || config.axis_y_inner) { // && !config.axis_rotated
+            return $$.getYAxisLabelPosition().isOuter ? 30 : 1;
         } else {
-            return !config.axis_y_show ? 1 : ceil10($$.getAxisWidthByAxisId('y', withoutRecompute));
+            return ceil10($$.getAxisWidthByAxisId('y', withoutRecompute));
         }
     };
     c3_chart_internal_fn.getCurrentPaddingRight = function () {
@@ -2534,8 +2542,10 @@
             return config.padding_right + 1; // 1 is needed not to hide tick line
         } else if (config.axis_rotated) {
             return defaultPadding + legendWidthOnRight;
+        } else if (!config.axis_y2_show || config.axis_y2_inner) { // && !config.axis_rotated
+            return defaultPadding + legendWidthOnRight + ($$.getY2AxisLabelPosition().isOuter ? 20 : 0);
         } else {
-            return (!config.axis_y2_show ? defaultPadding : ceil10($$.getAxisWidthByAxisId('y2'))) + legendWidthOnRight;
+            return ceil10($$.getAxisWidthByAxisId('y2')) + legendWidthOnRight;
         }
     };
     
@@ -4019,6 +4029,7 @@
             .style('opacity', 0)
             .style('visibility', 'hidden');
     };
+    var legendItemTextBox = {};
     c3_chart_internal_fn.updateLegend = function (targetIds, options, transitions) {
         var $$ = this, config = $$.config;
         var xForLegend, xForLegendText, xForLegendRect, yForLegend, yForLegendText, yForLegendRect;
@@ -4032,9 +4043,16 @@
         withTransition = getOption(options, "withTransition", true);
         withTransitionForTransform = getOption(options, "withTransitionForTransform", true);
     
+        function getTextBox(textElement, id) {
+            if (!legendItemTextBox[id]) {
+                legendItemTextBox[id] = $$.getTextRect(textElement.textContent, CLASS.legendItem);
+            }
+            return legendItemTextBox[id];
+        }
+    
         function updatePositions(textElement, id, index) {
             var reset = index === 0, isLast = index === targetIds.length - 1,
-                box = $$.getTextRect(textElement.textContent, CLASS.legendItem),
+                box = getTextBox(textElement, id),
                 itemWidth = box.width + tileWidth + (isLast && !($$.isLegendRight || $$.isLegendInset) ? 0 : paddingRight),
                 itemHeight = box.height + paddingTop,
                 itemLength = $$.isLegendRight || $$.isLegendInset ? itemHeight : itemWidth,
@@ -4245,7 +4263,7 @@
     
         $$.axes.y = main.append("g")
             .attr("class", CLASS.axis + ' ' + CLASS.axisY)
-            .attr("clip-path", $$.clipPathForYAxis)
+            .attr("clip-path", config.axis_y_inner ? "" : $$.clipPathForYAxis)
             .attr("transform", $$.getTranslate('y'))
             .style("visibility", config.axis_y_show ? 'visible' : 'hidden');
         $$.axes.y.append("text")
@@ -4459,7 +4477,7 @@
         if ($$.config.axis_rotated) {
             return position.isInner ? "-0.5em" : "3em";
         } else {
-            return position.isInner ? "1.2em" : -20 - $$.getMaxTickWidth('y');
+            return position.isInner ? "1.2em" : -10 - ($$.config.axis_y_inner ? 0 : ($$.getMaxTickWidth('y') + 10));
         }
     };
     c3_chart_internal_fn.dyForY2AxisLabel = function () {
@@ -4468,7 +4486,7 @@
         if ($$.config.axis_rotated) {
             return position.isInner ? "1.2em" : "-2.2em";
         } else {
-            return position.isInner ? "-0.5em" : 30 + this.getMaxTickWidth('y2');
+            return position.isInner ? "-0.5em" : 15 + ($$.config.axis_y2_inner ? 0 : (this.getMaxTickWidth('y2') + 15));
         }
     };
     c3_chart_internal_fn.textAnchorForXAxisLabel = function () {
@@ -4632,7 +4650,7 @@
     };
     c3_chart_internal_fn.getYAxisClipX = function () {
         var $$ = this;
-        return $$.getAxisClipX($$.config.axis_rotated);
+        return $$.config.axis_y_inner ? -1 : $$.getAxisClipX($$.config.axis_rotated);
     };
     c3_chart_internal_fn.getYAxisClipY = function () {
         var $$ = this;
@@ -4658,7 +4676,7 @@
     };
     c3_chart_internal_fn.getYAxisClipWidth = function () {
         var $$ = this;
-        return $$.getAxisClipWidth($$.config.axis_rotated);
+        return $$.getAxisClipWidth($$.config.axis_rotated) + ($$.config.axis_y_inner ? 20 : 0);
     };
     c3_chart_internal_fn.getYAxisClipHeight = function () {
         var $$ = this;
@@ -5462,7 +5480,8 @@
             withTransition: false,
             withY: $$.config.zoom_rescale,
             withSubchart: false,
-            withUpdateXDomain: true
+            withUpdateXDomain: true,
+            withDimension: false
         });
         $$.config.subchart_onbrush.call($$.api, x.orgDomain());
     };
@@ -5547,7 +5566,8 @@
             withTransition: false,
             withY: config.zoom_rescale,
             withSubchart: false,
-            withEventRect: false
+            withEventRect: false,
+            withDimension: false
         });
         if (d3.event.sourceEvent.type === 'mousemove') {
             $$.cancelClick = true;
@@ -5825,7 +5845,7 @@
         return CLASS.chartArc + this.classTarget(d.data.id);
     };
     c3_chart_internal_fn.getTargetSelectorSuffix = function (targetId) {
-        return targetId || targetId === 0 ? ('-' + targetId).replace(/[\s?!@#$%^&*()_=+,.<>'":;\[\]/|~`{}\\]/g, '-') : '';
+        return targetId || targetId === 0 ? ('-' + targetId).replace(/[\s?!@#$%^&*()_=+,.<>'":;\[\]\/|~`{}\\]/g, '-') : '';
     };
     c3_chart_internal_fn.selectorTarget = function (id, prefix) {
         return (prefix || '') + '.' + CLASS.target + this.getTargetSelectorSuffix(id);
@@ -6523,12 +6543,16 @@
             return [].concat(targetIds).indexOf(t.id) >= 0;
         });
     };
-    c3_chart_fn.data.shown = function (targetId) {
-        return this.internal.filterTargetsToShow(this.data(targetId));
+    c3_chart_fn.data.shown = function (targetIds) {
+        return this.internal.filterTargetsToShow(this.data(targetIds));
     };
     c3_chart_fn.data.values = function (targetId) {
-        var target = this.data(targetId);
-        return target ? target.values.map(function (d) { return d.value; }) : null;
+        var targets, values = null;
+        if (targetId) {
+            targets = this.data(targetId);
+            values = targets[0] ? targets[0].values.map(function (d) { return d.value; }) : null;
+        }
+        return values;
     };
     c3_chart_fn.data.names = function (names) {
         return this.internal.updateDataAttributes('names', names);
@@ -6712,6 +6736,8 @@
     // Features:
     // 1. category axis
     // 2. ceil values of translate/x/y to int for half pixel antialiasing
+    // 3. multiline tick text
+    var tickTextCharSize;
     function c3_axis(d3, params) {
         var scale = d3.scale.linear(), orient = "bottom", innerTickSize = 6, outerTickSize, tickPadding = 3, tickValues = null, tickFormat, tickArguments;
     
@@ -6760,6 +6786,9 @@
             return tickFormat ? tickFormat(v) : v;
         }
         function getSizeFor1Char(tick) {
+            if (tickTextCharSize) {
+                return tickTextCharSize;
+            }
             var size = {
                 h: 11.5,
                 w: 5.5
@@ -6774,6 +6803,7 @@
                     size.w = w;
                 }
             }).text('');
+            tickTextCharSize = size;
             return size;
         }
         function axis(g) {
@@ -6808,7 +6838,7 @@
                     tickOffset = tickX = 0;
                 }
     
-                var text, tspan, sizeFor1Char = getSizeFor1Char(tick), counts = [];
+                var text, tspan, sizeFor1Char = getSizeFor1Char(g.select('.tick')), counts = [];
                 var tickLength = Math.max(innerTickSize, 0) + tickPadding,
                     isVertical = orient === 'left' || orient === 'right';
     
@@ -6822,7 +6852,7 @@
                     }
     
                     if (!maxWidth || maxWidth <= 0) {
-                        maxWidth = isVertical ? 95 : params.isCategory ? (Math.ceil(scale1(ticks[1]) - scale1(ticks[0])) - 10) : 110;
+                        maxWidth = isVertical ? 95 : params.isCategory ? (Math.ceil(scale1(ticks[1]) - scale1(ticks[0])) - 12) : 110;
                     }
     
                     function split(splitted, text) {

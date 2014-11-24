@@ -68,6 +68,7 @@ c3_chart_internal_fn.getDefaultConfig = function () {
         color_threshold: {},
         // legend
         legend_show: true,
+        legend_hide: false,
         legend_position: 'bottom',
         legend_inset_anchor: 'top-left',
         legend_inset_x: 10,
@@ -105,6 +106,7 @@ c3_chart_internal_fn.getDefaultConfig = function () {
         axis_y_max: undefined,
         axis_y_min: undefined,
         axis_y_center: undefined,
+        axis_y_inner: undefined,
         axis_y_label: {},
         axis_y_tick_format: undefined,
         axis_y_tick_outer: true,
@@ -118,6 +120,7 @@ c3_chart_internal_fn.getDefaultConfig = function () {
         axis_y2_max: undefined,
         axis_y2_min: undefined,
         axis_y2_center: undefined,
+        axis_y2_inner: undefined,
         axis_y2_label: {},
         axis_y2_tick_format: undefined,
         axis_y2_tick_outer: true,

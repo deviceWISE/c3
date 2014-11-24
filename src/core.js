@@ -1,4 +1,4 @@
-var c3 = { version: "0.4.3" };
+var c3 = { version: "0.4.4" };
 
 var c3_chart_fn, c3_chart_internal_fn;
 
@@ -108,8 +108,8 @@ c3_chart_internal_fn.initParams = function () {
     $$.defocusedTargetIds = [];
 
     $$.xOrient = config.axis_rotated ? "left" : "bottom";
-    $$.yOrient = config.axis_rotated ? "bottom" : "left";
-    $$.y2Orient = config.axis_rotated ? "top" : "right";
+    $$.yOrient = config.axis_rotated ? (config.axis_y_inner ? "top" : "bottom") : (config.axis_y_inner ? "right" : "left");
+    $$.y2Orient = config.axis_rotated ? (config.axis_y_inner ? "bottom" : "top") : (config.axis_y_inner ? "left" : "right");
     $$.subXOrient = config.axis_rotated ? "left" : "bottom";
 
     $$.isLegendRight = config.legend_position === 'right';
@@ -136,6 +136,15 @@ c3_chart_internal_fn.initParams = function () {
     $$.intervalForObserveInserted = undefined;
 
     $$.axes.subx = d3.selectAll([]); // needs when excluding subchart.js
+};
+
+c3_chart_internal_fn.initChartElements = function () {
+    if (this.initBar) { this.initBar(); }
+    if (this.initTimelineLanes) { this.initTimelineLanes(); }
+    if (this.initLine) { this.initLine(); }
+    if (this.initArc) { this.initArc(); }
+    if (this.initGauge) { this.initGauge(); }
+    if (this.initText) { this.initText(); }
 };
 
 c3_chart_internal_fn.initWithData = function (data) {
@@ -165,6 +174,9 @@ c3_chart_internal_fn.initWithData = function (data) {
     // Set targets to hide if needed
     if (config.data_hide) {
         $$.addHiddenTargetIds(config.data_hide === true ? $$.mapToIds($$.data.targets) : config.data_hide);
+    }
+    if (config.legend_hide) {
+        $$.addHiddenLegendIds(config.legend_hide === true ? $$.mapToIds($$.data.targets) : config.legend_hide);
     }
 
     // when gauge, hide legend // TODO: fix
@@ -240,21 +252,8 @@ c3_chart_internal_fn.initWithData = function (data) {
     // Cover whole with rects for events
     $$.initEventRect();
 
-    // Define g for bar chart area
-    if ($$.initBar) { $$.initBar(); }
-
-    // Define g for timeline lane chart area
-    if ($$.initTimelineLanes) { $$.initTimelineLanes(); }
-
-    // Define g for line chart area
-    if ($$.initLine) { $$.initLine(); }
-
-    // Define g for arc chart area
-    if ($$.initArc) { $$.initArc(); }
-    if ($$.initGauge) { $$.initGauge(); }
-
-    // Define g for text area
-    if ($$.initText) { $$.initText(); }
+    // Define g for chart
+    $$.initChartElements();
 
     // if zoom privileged, insert rect to forefront
     // TODO: is this needed?
@@ -437,7 +436,7 @@ c3_chart_internal_fn.redraw = function (options, transitions) {
     var $$ = this, main = $$.main, d3 = $$.d3, config = $$.config;
     var areaIndices = $$.getShapeIndices($$.isAreaType), barIndices = $$.getShapeIndices($$.isBarType), lineIndices = $$.getShapeIndices($$.isLineType);
     var timelineIndices = $$.getShapeIndices($$.isTimelineType);
-    var withY, withSubchart, withTransition, withTransitionForExit, withTransitionForAxis, withTransform, withUpdateXDomain, withUpdateOrgXDomain, withTrimXDomain, withLegend, withEventRect;
+    var withY, withSubchart, withTransition, withTransitionForExit, withTransitionForAxis, withTransform, withUpdateXDomain, withUpdateOrgXDomain, withTrimXDomain, withLegend, withEventRect, withDimension;
     var hideAxis = $$.hasArcType();
     var drawArea, drawBar, drawLine, drawTimeline, xForText, yForText;
     var duration, durationForExit, durationForAxis;
@@ -455,6 +454,7 @@ c3_chart_internal_fn.redraw = function (options, transitions) {
     withTrimXDomain = getOption(options, "withTrimXDomain", true);
     withLegend = getOption(options, "withLegend", false);
     withEventRect = getOption(options, "withEventRect", true);
+    withDimension = getOption(options, "withDimension", true);
     withTransitionForExit = getOption(options, "withTransitionForExit", withTransition);
     withTransitionForAxis = getOption(options, "withTransitionForAxis", withTransition);
 
@@ -467,7 +467,7 @@ c3_chart_internal_fn.redraw = function (options, transitions) {
     // update legend and transform each g
     if (withLegend && config.legend_show) {
         $$.updateLegend($$.mapToIds($$.data.targets), options, transitions);
-    } else if ((!config.axis_rotated && withY) || (config.axis_rotated && withUpdateXDomain)) {
+    } else if (withDimension) {
         // need to update dimension (e.g. axis.y.tick.values) because y tick values should change
         // no need to update axis in it because they will be updated in redraw()
         $$.updateDimension(true);
@@ -744,7 +744,8 @@ c3_chart_internal_fn.initialOpacityForCircle = function (d) {
     return d.value !== null && this.withoutFadeIn[d.id] ? this.opacityForCircle(d) : 0;
 };
 c3_chart_internal_fn.opacityForCircle = function (d) {
-    return isValue(d.value) && this.config.point_show ? (this.isScatterType(d) ? 0.5 : 1) : 0;
+    var opacity = this.config.point_show ? 1 : 0;
+    return isValue(d.value) ? (this.isScatterType(d) ? 0.5 : opacity) : 0;
 };
 c3_chart_internal_fn.opacityForText = function () {
     return this.hasDataLabel() ? 1 : 0;
