@@ -419,10 +419,12 @@ c3_chart_internal_fn.updateTargets = function (targets) {
 
     //-- Arc --//
     if ($$.updateTargetsForArc) { $$.updateTargetsForArc(targets); }
-    if ($$.updateTargetsForSubchart) { $$.updateTargetsForSubchart(targets); }
 
     //-- Timeline --//
     if ($$.updateTargetsForTimeline) { $$.updateTargetsForTimeline(targets); }
+
+    //-- Subchart --//
+    if ($$.updateTargetsForSubchart) { $$.updateTargetsForSubchart(targets); }
 
     /*-- Show --*/
 
@@ -539,7 +541,7 @@ c3_chart_internal_fn.redraw = function (options, transitions) {
     drawArea = $$.generateDrawArea ? $$.generateDrawArea(areaIndices, false) : undefined;
     drawBar = $$.generateDrawBar ? $$.generateDrawBar(barIndices) : undefined;
     drawLine = $$.generateDrawLine ? $$.generateDrawLine(lineIndices, false) : undefined;
-    drawTimeline = $$.generateDrawTimeline ? $$.generateDrawTimeline(timelineIndices) : undefined;
+    drawTimeline = $$.generateDrawTimeline ? $$.generateDrawTimeline(timelineIndices, false) : undefined;
     xForText = $$.generateXYForText(areaIndices, barIndices, lineIndices, true);
     yForText = $$.generateXYForText(areaIndices, barIndices, lineIndices, false);
 
@@ -590,7 +592,7 @@ c3_chart_internal_fn.redraw = function (options, transitions) {
 
     // subchart
     if ($$.redrawSubchart) {
-        $$.redrawSubchart(withSubchart, transitions, duration, durationForExit, areaIndices, barIndices, lineIndices);
+        $$.redrawSubchart(withSubchart, transitions, duration, durationForExit, areaIndices, barIndices, lineIndices, timelineIndices);
     }
 
     // circles for select

@@ -30,6 +30,10 @@ c3_chart_internal_fn.initSubchart = function () {
     context.select('.' + CLASS.chart).append("g")
         .attr("class", CLASS.chartLines);
 
+    // Define g for timeline chart area
+    context.select('.' + CLASS.chart).append("g")
+        .attr("class", CLASS.chartLanes);
+
     // Add extent rect for Brush
     context.append("g")
         .attr("clip-path", $$.clipPath)
@@ -48,11 +52,13 @@ c3_chart_internal_fn.initSubchart = function () {
 c3_chart_internal_fn.updateTargetsForSubchart = function (targets) {
     var $$ = this, context = $$.context, config = $$.config,
         contextLineEnter, contextLineUpdate, contextBarEnter, contextBarUpdate,
+        contextTimelineEnter, contextTimelineUpdate,
         classChartBar = $$.classChartBar.bind($$),
         classBars = $$.classBars.bind($$),
         classChartLine = $$.classChartLine.bind($$),
         classLines = $$.classLines.bind($$),
-        classAreas = $$.classAreas.bind($$);
+        classAreas = $$.classAreas.bind($$),
+        classLanes = $$.classLanes.bind($$);
 
     if (config.subchart_show) {
         contextBarUpdate = context.select('.' + CLASS.chartBars).selectAll('.' + CLASS.chartBar)
@@ -78,16 +84,30 @@ c3_chart_internal_fn.updateTargetsForSubchart = function (targets) {
         // Area
         contextLineEnter.append("g")
             .attr("class", classAreas);
+
+        //-- Timeline --//
+        contextTimelineUpdate = context.select('.' + CLASS.chartLanes).selectAll('.' + CLASS.chartBar)
+            .data(targets)
+            .attr('class', classChartBar);
+        contextTimelineEnter = contextTimelineUpdate.enter().append('g')
+            .style('opacity', 0)
+            .attr('class', classChartBar);
+        // Bars for each data
+        contextTimelineEnter.append("g")
+            .attr("class", classLanes);
     }
 };
-c3_chart_internal_fn.redrawSubchart = function (withSubchart, transitions, duration, durationForExit, areaIndices, barIndices, lineIndices) {
+c3_chart_internal_fn.redrawSubchart = function (withSubchart, transitions, duration, durationForExit, areaIndices, barIndices, lineIndices, timelineIndices) {
     var $$ = this, d3 = $$.d3, context = $$.context, config = $$.config,
         contextLine,  contextArea, contextBar, drawAreaOnSub, drawBarOnSub, drawLineOnSub,
+        contextTimeline, drawTimelineOnSub,
         barData = $$.barData.bind($$),
         lineData = $$.lineData.bind($$),
+        timelineBarData = $$.timelineBarData.bind($$),
         classBar = $$.classBar.bind($$),
         classLine = $$.classLine.bind($$),
         classArea = $$.classArea.bind($$),
+        classLane = $$.classLane.bind($$),
         initialOpacity = $$.initialOpacity.bind($$);
 
     // subchart
@@ -112,6 +132,7 @@ c3_chart_internal_fn.redrawSubchart = function (withSubchart, transitions, durat
             drawAreaOnSub = $$.generateDrawArea(areaIndices, true);
             drawBarOnSub = $$.generateDrawBar(barIndices, true);
             drawLineOnSub = $$.generateDrawLine(lineIndices, true);
+            drawTimelineOnSub = $$.generateDrawTimeline(timelineIndices, true);
             // bars
             contextBar = context.selectAll('.' + CLASS.bars).selectAll('.' + CLASS.bar)
                 .data(barData);
@@ -155,6 +176,22 @@ c3_chart_internal_fn.redrawSubchart = function (withSubchart, transitions, durat
                 .style("fill", $$.color)
                 .style("opacity", $$.orgAreaOpacity);
             contextArea.exit().transition().duration(durationForExit)
+                .style('opacity', 0)
+                .remove();
+            // redraw timeline
+//            $$.redrawTimelineLanes();
+            contextTimeline = context.selectAll('.' + CLASS.lanes).selectAll('.' + CLASS.bar)
+                .data(timelineBarData);
+            contextTimeline.enter().append('path')
+                .attr("class", classLane)
+                .style("stroke", 'none')
+                .style("fill", $$.color);
+            contextTimeline
+                .style("opacity", initialOpacity)
+                .transition().duration(duration)
+                .attr('d', drawTimelineOnSub)
+                .style('opacity', function (d) { return d.value === 0 ? 0 : 1; });
+            contextTimeline.exit().transition().duration(duration)
                 .style('opacity', 0)
                 .remove();
         }

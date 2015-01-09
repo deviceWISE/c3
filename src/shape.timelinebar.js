@@ -1,24 +1,36 @@
 c3_chart_internal_fn.initTimelineLanes = function () { //console.log('initTimelineLanes');
-    var $$ = this, config = $$.config, d3 = $$.d3;
+    var $$ = this, config = $$.config, d3 = $$.d3, lanesEnter;
     $$.lanes = $$.main.select('.' + CLASS.chart).append("g")
         .attr("class", CLASS.chartLanes)
         .selectAll();
     if ($$.hasTimelineType($$.data.targets)) {
         if (config.lane_combine) {
-            $$.lanes.data($$.data.targets).enter().append("line")
+            lanesEnter = $$.lanes.data($$.data.targets).enter().append("g")
+                .attr("class", $$.classChartBar.bind($$));
+            lanesEnter
+                .append("line")
                 .attr("class", CLASS.chartLane)
                 .attr('x1', 0)
                 .attr('y1', 0.5)
-                .attr('x2', 1)
+                .attr('x2', $$.width)
                 .attr('y2', 0.5);
+            lanesEnter
+                .append("g")
+                .attr("class", CLASS.lanes);
         }
         else {
-            $$.lanes.data($$.data.targets).enter().append("line")
+            lanesEnter = $$.lanes.data($$.data.targets).enter().append("g")
+                .attr("class", $$.classChartBar.bind($$));
+            lanesEnter
+                .append("line")
                 .attr("class", CLASS.chartLane)
                 .attr('x1', 0)
                 .attr('y1', function (d, i) { return d3.round((($$.height / $$.data.targets.length) * i)) + 0.5; })
-                .attr('x2', 1)
+                .attr('x2', $$.width)
                 .attr('y2', function (d, i) { return d3.round((($$.height / $$.data.targets.length) * i)) + 0.5; });
+            lanesEnter
+                .append("g")
+                .attr("class", CLASS.lanes);
         }
     }
 };
@@ -35,7 +47,7 @@ c3_chart_internal_fn.initTimelineLaneAxis = function () { //console.log('initTim
             }
         });
         $$.main.each(function () {
-            d3.select(this).attr('transform', 'translate(' + 0.5 + offset + ',' + d3.transform(d3.select(this).attr('transform')).translate[1] + ')');
+            d3.select(this).attr('transform', 'translate(' + (0.5 + offset) + ',' + d3.transform(d3.select(this).attr('transform')).translate[1] + ')');
         });
         clipPathYAxis.each(function () {
             d3.select(this).attr('width', 0.5 + offset);
@@ -97,10 +109,11 @@ c3_chart_internal_fn.updateTargetsForTimeline = function (targets) { //console.l
     var $$ = this, config = $$.config,
         mainTimelineUpdate, mainTimelineEnter,
         classChartBar = $$.classChartBar.bind($$),
+        classFocus = $$.classFocus.bind($$),
         classLanes = $$.classLanes.bind($$);
     mainTimelineUpdate = $$.main.select('.' + CLASS.chartLanes).selectAll('.' + CLASS.chartBar)
         .data(targets)
-        .attr('class', classChartBar);
+        .attr('class', function (d) { return classChartBar(d) + classFocus(d); });
     mainTimelineEnter = mainTimelineUpdate.enter().append('g')
         .attr('class', classChartBar)
         .style('opacity', 0)
@@ -111,44 +124,18 @@ c3_chart_internal_fn.updateTargetsForTimeline = function (targets) { //console.l
         .style("cursor", function (d) { return config.data_selection_isselectable(d) ? "pointer" : null; });
 };
 c3_chart_internal_fn.redrawTimeline = function (durationForExit) { //console.log('redrawTimeline');
-    var $$ = this,
-        timelineBarData = $$.timelineBarData.bind($$),
-        classLane = $$.classLane.bind($$),
-        initialOpacity = $$.initialOpacity.bind($$),
-        color = function (d) { return $$.color(d); };
-    $$.redrawTimelineLanes();
-    $$.mainTimeline = $$.main.selectAll('.' + CLASS.lanes).selectAll('.' + CLASS.bar)
-        .data(timelineBarData);
+    var $$ = this;
+    $$.mainTimeline = $$.main.selectAll('.' + CLASS.lanes).selectAll('.' + CLASS.lane)
+        .data($$.timelineBarData.bind($$));
     $$.mainTimeline.enter().append('path')
-        .attr("class", classLane)
-        .style("stroke-width", 0)
-        .style("fill", function (d) { return color(d.id); });
+        .attr("class", $$.classLane.bind($$))
+        .style("stroke", 'none')
+        .style("fill", $$.color);
     $$.mainTimeline
-        .style("opacity", initialOpacity);
+        .style("opacity", $$.initialOpacity.bind($$));
     $$.mainTimeline.exit().transition().duration(durationForExit)
         .style('opacity', 0)
         .remove();
-};
-c3_chart_internal_fn.redrawTimelineLanes = function () { //console.log('redrawTimelineLanes');
-    var $$ = this, config = $$.config, d3 = $$.d3;
-    if ($$.hasTimelineType($$.data.targets)) {
-        if (config.lane_combine) {
-            $$.lanes.data($$.data.targets).enter().append("line")
-                .attr("class", CLASS.chartLane)
-                .attr('x1', 0)
-                .attr('y1', 0.5)
-                .attr('x2', $$.width)
-                .attr('y2', 0.5);
-        }
-        else {
-            $$.lanes.data($$.data.targets).enter().append("line")
-                .attr("class", CLASS.chartLane)
-                .attr('x1', 0)
-                .attr('y1', function (d, i) { return d3.round((($$.height / $$.data.targets.length) * i)) + 0.5; })
-                .attr('x2', $$.width)
-                .attr('y2', function (d, i) { return d3.round((($$.height / $$.data.targets.length) * i)) + 0.5; });
-        }
-    }
 };
 c3_chart_internal_fn.redrawTimelineLaneAxis = function () { //console.log('redrawTimelineLaneAxis');
     var $$ = this, d3 = $$.d3,
@@ -200,22 +187,22 @@ c3_chart_internal_fn.generateDrawTimeline = function (timelineIndicies, isSub) {
 };
 c3_chart_internal_fn.generateGetTimelineBarPoints = function (timelineIndices, isSub) { //console.log('generateGetTimelineBarPoints');
     var $$ = this, config = $$.config, d3 = $$.d3,
+        height = !!isSub ? $$.height2 : $$.height,
         barTargetsNum = timelineIndices.__max__ + 1,
-        barW = (config.lane_combine ? $$.height : ($$.height / barTargetsNum)) - ($$.laneMargin.top + $$.laneMargin.bottom),
+        barW = (config.lane_combine ? height : (height / barTargetsNum)) - ($$.laneMargin.top + $$.laneMargin.bottom),
         barX = $$.getShapeX(0, barTargetsNum, timelineIndices, !!isSub),
         barY = function (d) {
             if (config.lane_combine) {
                 return $$.laneMargin.top;
             }
-            return d3.round(($$.height / barTargetsNum) * timelineIndices[d.id]) + $$.laneMargin.top;
-        },
-        barOffset = $$.getShapeX(0, barTargetsNum, timelineIndices, !!isSub);
-    return function (d, i) {
+            return d3.round((height / barTargetsNum) * timelineIndices[d.id]) + $$.laneMargin.top;
+        };
+    return function (d) {
         var d2 = d;
-        if ($$.data.targets[timelineIndices[d.id]].values[i + 1]) {
-            d2 = $$.data.targets[timelineIndices[d.id]].values[i + 1];
+        if ($$.data.targets[timelineIndices[d.id]].values[d.index + 1]) {
+            d2 = $$.data.targets[timelineIndices[d.id]].values[d.index + 1];
         }
-        var offset = barOffset(d2),
+        var offset = barX(d2),
             posX = barX(d),
             posY = barY(d);
 
