@@ -3176,7 +3176,7 @@
         return sx < mouse[0] && mouse[0] < ex && ey < mouse[1] && mouse[1] < sy;
     };
 
-    c3_chart_internal_fn.initTimelineLanes = function () { //console.log('initTimelineLanes');
+    c3_chart_internal_fn.initTimelineLanes = function () {
         var $$ = this, config = $$.config, d3 = $$.d3, lanesEnter;
         $$.lanes = $$.main.select('.' + CLASS.chart).append("g")
             .attr("class", CLASS.chartLanes)
@@ -3212,7 +3212,7 @@
             }
         }
     };
-    c3_chart_internal_fn.initTimelineLaneAxis = function () { //console.log('initTimelineLaneAxis');
+    c3_chart_internal_fn.initTimelineLaneAxis = function () {
         var $$ = this, d3 = $$.d3,
             clipPathYAxis = $$.clipYAxis,
             yAxis = $$.main.selectAll('.' + CLASS.axisY),
@@ -3233,7 +3233,7 @@
             });
         }
     };
-    c3_chart_internal_fn.initTimelineLaneLabels = function () { //console.log('initTimelineLaneLabels');
+    c3_chart_internal_fn.initTimelineLaneLabels = function () {
         var $$ = this, config = $$.config, d3 = $$.d3;
     
         if ($$.hasTimelineType($$.data.targets)) {
@@ -3283,7 +3283,7 @@
             $$.axes.y.selectAll(CLASS.axis + ' ' + CLASS.axisY).attr("transform", 'translate(' + boundingClientRectWidth + ',0)');
         }
     };
-    c3_chart_internal_fn.updateTargetsForTimeline = function (targets) { //console.log('updateTargetsForTimeline');
+    c3_chart_internal_fn.updateTargetsForTimeline = function (targets) {
         var $$ = this, config = $$.config,
             mainTimelineUpdate, mainTimelineEnter,
             classChartBar = $$.classChartBar.bind($$),
@@ -3301,21 +3301,36 @@
             .attr("class", classLanes)
             .style("cursor", function (d) { return config.data_selection_isselectable(d) ? "pointer" : null; });
     };
-    c3_chart_internal_fn.redrawTimeline = function (durationForExit) { //console.log('redrawTimeline');
-        var $$ = this;
+    c3_chart_internal_fn.redrawTimeline = function (durationForExit) {
+        var $$ = this, d3 = $$.d3;
         $$.mainTimeline = $$.main.selectAll('.' + CLASS.lanes).selectAll('.' + CLASS.lane)
             .data($$.timelineBarData.bind($$));
         $$.mainTimeline.enter().append('path')
             .attr("class", $$.classLane.bind($$))
             .style("stroke", 'none')
-            .style("fill", $$.color);
+            .style("fill", $$.color)
+            .on('mousemove', function (d) {
+                var selectedData;
+                // Show tooltip
+                selectedData = $$.filterTargetsToShow($$.data.targets).map(function (t) {
+                    return $$.addName($$.getValueOnIndex(t.values, d.index));
+                });
+                if ($$.config.tooltip_grouped) {
+                    $$.showTooltip(selectedData, d3.mouse(this));
+                    $$.showXGridFocus(selectedData);
+                }
+            })
+            .on('mouseout', function () {
+                $$.hideXGridFocus();
+                $$.hideTooltip();
+            });
         $$.mainTimeline
             .style("opacity", $$.initialOpacity.bind($$));
         $$.mainTimeline.exit().transition().duration(durationForExit)
             .style('opacity', 0)
             .remove();
     };
-    c3_chart_internal_fn.redrawTimelineLaneAxis = function () { //console.log('redrawTimelineLaneAxis');
+    c3_chart_internal_fn.redrawTimelineLaneAxis = function () {
         var $$ = this, d3 = $$.d3,
             clipPathYAxis = $$.clipYAxis,
             yAxis = $$.main.selectAll('.' + CLASS.axisY),
@@ -3336,14 +3351,14 @@
             });
         }
     };
-    c3_chart_internal_fn.addTransitionForTimeline = function (transitions, drawTimeline) { //console.log('addTransitionForTimeline');
+    c3_chart_internal_fn.addTransitionForTimeline = function (transitions, drawTimeline) {
         var $$ = this;
         transitions.push($$.mainTimeline.transition()
                          .attr('d', drawTimeline)
                          .style("fill", $$.color)
                          .style("opacity", function (d) { return d.value === 0 ? 0 : 1; }));
     };
-    c3_chart_internal_fn.generateDrawTimeline = function (timelineIndicies, isSub) { //console.log('generateDrawTimeline');
+    c3_chart_internal_fn.generateDrawTimeline = function (timelineIndicies, isSub) {
         var $$ = this, //config = $$.config,
             getPoints = $$.generateGetTimelineBarPoints(timelineIndicies, isSub);
         return function (d, i) {
@@ -3363,7 +3378,7 @@
             return path;
         };
     };
-    c3_chart_internal_fn.generateGetTimelineBarPoints = function (timelineIndices, isSub) { //console.log('generateGetTimelineBarPoints');
+    c3_chart_internal_fn.generateGetTimelineBarPoints = function (timelineIndices, isSub) {
         var $$ = this, config = $$.config, d3 = $$.d3,
             height = !!isSub ? $$.height2 : $$.height,
             barTargetsNum = timelineIndices.__max__ + 1,
@@ -3869,6 +3884,7 @@
         var $$ = this, config = $$.config;
         var tWidth, tHeight, svgLeft, tooltipLeft, tooltipRight, tooltipTop, chartRight;
         var forArc = $$.hasArcType(),
+            forTimeline = $$.hasTimelineType(),
             dataToShow = selectedData.filter(function (d) { return d && isValue(d.value); });
         if (dataToShow.length === 0 || !config.tooltip_show) {
             return;
@@ -3882,6 +3898,12 @@
         if (forArc) {
             tooltipLeft = ($$.width / 2) + mouse[0];
             tooltipTop = ($$.height / 2) + mouse[1] + 20;
+        } else if (forTimeline) {
+            tooltipTop = 0;
+            tooltipLeft = mouse[0] + $$.getCurrentPaddingLeft(true) + 30;
+            if (tooltipLeft > ($$.width / 2)) {
+                tooltipLeft = mouse[0] - tWidth;
+            }
         } else {
             svgLeft = $$.getSvgLeft(true);
             if (config.axis_rotated) {

@@ -53,6 +53,7 @@ c3_chart_internal_fn.showTooltip = function (selectedData, mouse) {
     var $$ = this, config = $$.config;
     var tWidth, tHeight, svgLeft, tooltipLeft, tooltipRight, tooltipTop, chartRight;
     var forArc = $$.hasArcType(),
+        forTimeline = $$.hasTimelineType(),
         dataToShow = selectedData.filter(function (d) { return d && isValue(d.value); });
     if (dataToShow.length === 0 || !config.tooltip_show) {
         return;
@@ -66,6 +67,12 @@ c3_chart_internal_fn.showTooltip = function (selectedData, mouse) {
     if (forArc) {
         tooltipLeft = ($$.width / 2) + mouse[0];
         tooltipTop = ($$.height / 2) + mouse[1] + 20;
+    } else if (forTimeline) {
+        tooltipTop = 0;
+        tooltipLeft = mouse[0] + $$.getCurrentPaddingLeft(true) + 30;
+        if (tooltipLeft > ($$.width / 2)) {
+            tooltipLeft = mouse[0] - tWidth;
+        }
     } else {
         svgLeft = $$.getSvgLeft(true);
         if (config.axis_rotated) {

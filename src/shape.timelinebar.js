@@ -1,4 +1,4 @@
-c3_chart_internal_fn.initTimelineLanes = function () { //console.log('initTimelineLanes');
+c3_chart_internal_fn.initTimelineLanes = function () {
     var $$ = this, config = $$.config, d3 = $$.d3, lanesEnter;
     $$.lanes = $$.main.select('.' + CLASS.chart).append("g")
         .attr("class", CLASS.chartLanes)
@@ -34,7 +34,7 @@ c3_chart_internal_fn.initTimelineLanes = function () { //console.log('initTimeli
         }
     }
 };
-c3_chart_internal_fn.initTimelineLaneAxis = function () { //console.log('initTimelineLaneAxis');
+c3_chart_internal_fn.initTimelineLaneAxis = function () {
     var $$ = this, d3 = $$.d3,
         clipPathYAxis = $$.clipYAxis,
         yAxis = $$.main.selectAll('.' + CLASS.axisY),
@@ -55,7 +55,7 @@ c3_chart_internal_fn.initTimelineLaneAxis = function () { //console.log('initTim
         });
     }
 };
-c3_chart_internal_fn.initTimelineLaneLabels = function () { //console.log('initTimelineLaneLabels');
+c3_chart_internal_fn.initTimelineLaneLabels = function () {
     var $$ = this, config = $$.config, d3 = $$.d3;
 
     if ($$.hasTimelineType($$.data.targets)) {
@@ -105,7 +105,7 @@ c3_chart_internal_fn.initTimelineLaneLabels = function () { //console.log('initT
         $$.axes.y.selectAll(CLASS.axis + ' ' + CLASS.axisY).attr("transform", 'translate(' + boundingClientRectWidth + ',0)');
     }
 };
-c3_chart_internal_fn.updateTargetsForTimeline = function (targets) { //console.log('updateTargetsForTimeline');
+c3_chart_internal_fn.updateTargetsForTimeline = function (targets) {
     var $$ = this, config = $$.config,
         mainTimelineUpdate, mainTimelineEnter,
         classChartBar = $$.classChartBar.bind($$),
@@ -123,21 +123,36 @@ c3_chart_internal_fn.updateTargetsForTimeline = function (targets) { //console.l
         .attr("class", classLanes)
         .style("cursor", function (d) { return config.data_selection_isselectable(d) ? "pointer" : null; });
 };
-c3_chart_internal_fn.redrawTimeline = function (durationForExit) { //console.log('redrawTimeline');
-    var $$ = this;
+c3_chart_internal_fn.redrawTimeline = function (durationForExit) {
+    var $$ = this, d3 = $$.d3;
     $$.mainTimeline = $$.main.selectAll('.' + CLASS.lanes).selectAll('.' + CLASS.lane)
         .data($$.timelineBarData.bind($$));
     $$.mainTimeline.enter().append('path')
         .attr("class", $$.classLane.bind($$))
         .style("stroke", 'none')
-        .style("fill", $$.color);
+        .style("fill", $$.color)
+        .on('mousemove', function (d) {
+            var selectedData;
+            // Show tooltip
+            selectedData = $$.filterTargetsToShow($$.data.targets).map(function (t) {
+                return $$.addName($$.getValueOnIndex(t.values, d.index));
+            });
+            if ($$.config.tooltip_grouped) {
+                $$.showTooltip(selectedData, d3.mouse(this));
+                $$.showXGridFocus(selectedData);
+            }
+        })
+        .on('mouseout', function () {
+            $$.hideXGridFocus();
+            $$.hideTooltip();
+        });
     $$.mainTimeline
         .style("opacity", $$.initialOpacity.bind($$));
     $$.mainTimeline.exit().transition().duration(durationForExit)
         .style('opacity', 0)
         .remove();
 };
-c3_chart_internal_fn.redrawTimelineLaneAxis = function () { //console.log('redrawTimelineLaneAxis');
+c3_chart_internal_fn.redrawTimelineLaneAxis = function () {
     var $$ = this, d3 = $$.d3,
         clipPathYAxis = $$.clipYAxis,
         yAxis = $$.main.selectAll('.' + CLASS.axisY),
@@ -158,14 +173,14 @@ c3_chart_internal_fn.redrawTimelineLaneAxis = function () { //console.log('redra
         });
     }
 };
-c3_chart_internal_fn.addTransitionForTimeline = function (transitions, drawTimeline) { //console.log('addTransitionForTimeline');
+c3_chart_internal_fn.addTransitionForTimeline = function (transitions, drawTimeline) {
     var $$ = this;
     transitions.push($$.mainTimeline.transition()
                      .attr('d', drawTimeline)
                      .style("fill", $$.color)
                      .style("opacity", function (d) { return d.value === 0 ? 0 : 1; }));
 };
-c3_chart_internal_fn.generateDrawTimeline = function (timelineIndicies, isSub) { //console.log('generateDrawTimeline');
+c3_chart_internal_fn.generateDrawTimeline = function (timelineIndicies, isSub) {
     var $$ = this, //config = $$.config,
         getPoints = $$.generateGetTimelineBarPoints(timelineIndicies, isSub);
     return function (d, i) {
@@ -185,7 +200,7 @@ c3_chart_internal_fn.generateDrawTimeline = function (timelineIndicies, isSub) {
         return path;
     };
 };
-c3_chart_internal_fn.generateGetTimelineBarPoints = function (timelineIndices, isSub) { //console.log('generateGetTimelineBarPoints');
+c3_chart_internal_fn.generateGetTimelineBarPoints = function (timelineIndices, isSub) {
     var $$ = this, config = $$.config, d3 = $$.d3,
         height = !!isSub ? $$.height2 : $$.height,
         barTargetsNum = timelineIndices.__max__ + 1,
