@@ -18,17 +18,19 @@ c3_chart_internal_fn.hasType = function (type, targets) {
                 has = true;
             }
         });
-    } else {
+    } else if (Object.keys(types).length) {
         Object.keys(types).forEach(function (id) {
             if (types[id] === type) { has = true; }
         });
+    } else {
+        has = $$.config.data_type === type;
     }
     return has;
 };
 c3_chart_internal_fn.hasArcType = function (targets) {
     return this.hasType('pie', targets) || this.hasType('donut', targets) || this.hasType('gauge', targets);
 };
-c3_chart_internal_fn.hasTimelineType = function (targets) { //console.log('hasTimelineType');
+c3_chart_internal_fn.hasTimelineType = function (targets) {
     return this.hasType('timeline', targets);
 };
 c3_chart_internal_fn.isLineType = function (d) {
@@ -43,7 +45,7 @@ c3_chart_internal_fn.isSplineType = function (d) {
     var id = isString(d) ? d : d.id;
     return ['spline', 'area-spline'].indexOf(this.config.data_types[id]) >= 0;
 };
-c3_chart_internal_fn.isTimelineType = function (d) { //console.log('isTimelineType');
+c3_chart_internal_fn.isTimelineType = function (d) {
     var id = isString(d) ? d : d.id;
     return ['timeline', 'timeline-gantt'].indexOf(this.config.data_types[id]) >= 0;
 };
@@ -94,6 +96,6 @@ c3_chart_internal_fn.lineOrScatterData = function (d) {
 c3_chart_internal_fn.barOrLineData = function (d) {
     return this.isBarType(d) || this.isLineType(d) ? d.values : [];
 };
-c3_chart_internal_fn.timelineBarData = function (d) { //console.log('timelineBarData');
+c3_chart_internal_fn.timelineBarData = function (d) {
     return this.isTimelineType(d) ? d.values : [];
 };

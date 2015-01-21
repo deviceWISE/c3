@@ -261,13 +261,13 @@ c3_chart_internal_fn.hasDataLabel = function () {
     }
     return false;
 };
-c3_chart_internal_fn.getDataLabelLength = function (min, max, axisId, key) {
+c3_chart_internal_fn.getDataLabelLength = function (min, max, key) {
     var $$ = this,
         lengths = [0, 0], paddingCoef = 1.3;
     $$.selectChart.select('svg').selectAll('.dummy')
         .data([min, max])
         .enter().append('text')
-        .text(function (d) { return $$.formatByAxisId(axisId)(d); })
+        .text(function (d) { return $$.dataLabelFormat(d.id)(d); })
         .each(function (d, i) {
             lengths[i] = this.getBoundingClientRect()[key] * paddingCoef;
         })
@@ -309,8 +309,8 @@ c3_chart_internal_fn.findClosest = function (values, pos) {
 
     // find mouseovering bar
     values.filter(function (v) { return v && $$.isBarType(v.id); }).forEach(function (v) {
-        var shape = $$.d3.select('.' + CLASS.bars + $$.getTargetSelectorSuffix(v.id) + ' .' + CLASS.bar + '-' + v.index).node();
-        if ($$.isWithinBar(shape)) {
+        var shape = $$.main.select('.' + CLASS.bars + $$.getTargetSelectorSuffix(v.id) + ' .' + CLASS.bar + '-' + v.index).node();
+        if (!closest && $$.isWithinBar(shape)) {
             closest = v;
         }
     });

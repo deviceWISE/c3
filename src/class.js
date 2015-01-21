@@ -93,10 +93,10 @@ c3_chart_internal_fn.classShape = function (d) {
 c3_chart_internal_fn.classShapes = function (d) {
     return this.generateClass(CLASS.shapes, d.id);
 };
-c3_chart_internal_fn.classLane = function (d) { //console.log('classLane');
+c3_chart_internal_fn.classLane = function (d) {
     return c3_chart_internal_fn.classShape(d) + this.generateClass(CLASS.lane, d.index);
 };
-c3_chart_internal_fn.classLanes = function (d) { //console.log('classLanes');
+c3_chart_internal_fn.classLanes = function (d) {
     return c3_chart_internal_fn.classShapes(d) + this.generateClass(CLASS.lanes, d.id);
 };
 c3_chart_internal_fn.classLine = function (d) {
@@ -180,5 +180,5 @@ c3_chart_internal_fn.selectorLegend = function (id) {
 };
 c3_chart_internal_fn.selectorLegends = function (ids) {
     var $$ = this;
-    return ids.length ? ids.map(function (id) { return $$.selectorLegend(id); }) : null;
+    return ids && ids.length ? ids.map(function (id) { return $$.selectorLegend(id); }) : null;
 };

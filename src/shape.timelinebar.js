@@ -57,7 +57,6 @@ c3_chart_internal_fn.initTimelineLaneAxis = function () {
 };
 c3_chart_internal_fn.initTimelineLaneLabels = function () {
     var $$ = this, config = $$.config, d3 = $$.d3;
-
     if ($$.hasTimelineType($$.data.targets)) {
         var boundingClientRectWidth = 0;
         var lane_labels;
@@ -99,9 +98,7 @@ c3_chart_internal_fn.initTimelineLaneLabels = function () {
                 .attr('y', function (d, i) { return d3.round((($$.height / $$.data.targets.length) * i) + ($$.height / $$.data.targets.length) / 2); })
                 .attr("dy", ".32em");
         }
-
         $$.config.padding_left = boundingClientRectWidth;
-
         $$.axes.y.selectAll(CLASS.axis + ' ' + CLASS.axisY).attr("transform", 'translate(' + boundingClientRectWidth + ',0)');
     }
 };
@@ -123,8 +120,8 @@ c3_chart_internal_fn.updateTargetsForTimeline = function (targets) {
         .attr("class", classLanes)
         .style("cursor", function (d) { return config.data_selection_isselectable(d) ? "pointer" : null; });
 };
-c3_chart_internal_fn.redrawTimeline = function (durationForExit) {
-    var $$ = this, d3 = $$.d3;
+c3_chart_internal_fn.updateTimeline = function (durationForExit) {
+    var $$ = this;
     $$.mainTimeline = $$.main.selectAll('.' + CLASS.lanes).selectAll('.' + CLASS.lane)
         .data($$.timelineBarData.bind($$));
     $$.mainTimeline.enter().append('path')
@@ -138,7 +135,7 @@ c3_chart_internal_fn.redrawTimeline = function (durationForExit) {
                 return $$.addName($$.getValueOnIndex(t.values, d.index));
             });
             if ($$.config.tooltip_grouped) {
-                $$.showTooltip(selectedData, d3.mouse(this));
+                $$.showTooltip(selectedData, this);
                 $$.showXGridFocus(selectedData);
             }
         })
@@ -150,7 +147,16 @@ c3_chart_internal_fn.redrawTimeline = function (durationForExit) {
         .style("opacity", $$.initialOpacity.bind($$));
     $$.mainTimeline.exit().transition().duration(durationForExit)
         .style('opacity', 0)
+        .style("stroke", 'none')
         .remove();
+};
+c3_chart_internal_fn.redrawTimeline = function (drawTimeline, withTransition) {
+    return [
+        (withTransition ? this.mainTimeline.transition() : this.mainTimeline)
+            .attr("d", drawTimeline)
+            .style("fill", this.color)
+            .style("opacity", function (d) { return d.value === 0 ? 0 : 1; })
+    ];
 };
 c3_chart_internal_fn.redrawTimelineLaneAxis = function () {
     var $$ = this, d3 = $$.d3,
@@ -173,30 +179,20 @@ c3_chart_internal_fn.redrawTimelineLaneAxis = function () {
         });
     }
 };
-c3_chart_internal_fn.addTransitionForTimeline = function (transitions, drawTimeline) {
-    var $$ = this;
-    transitions.push($$.mainTimeline.transition()
-                     .attr('d', drawTimeline)
-                     .style("fill", $$.color)
-                     .style("opacity", function (d) { return d.value === 0 ? 0 : 1; }));
-};
 c3_chart_internal_fn.generateDrawTimeline = function (timelineIndicies, isSub) {
-    var $$ = this, //config = $$.config,
+    var $$ = this,
         getPoints = $$.generateGetTimelineBarPoints(timelineIndicies, isSub);
     return function (d, i) {
         // 4 points that make a bar
         var points = getPoints(d, i);
-
         // switch points if axis is rotated, not applicable for sub chart
-        var indexX = 0; //config.axis_rotated ? 1 : 0;
-        var indexY = 1; //config.axis_rotated ? 0 : 1;
-
+        var indexX = 0;
+        var indexY = 1;
         var path = 'M ' + points[0][indexX] + ',' + points[0][indexY] + ' ' +
                 'L' + points[1][indexX] + ',' + points[1][indexY] + ' ' +
                 'L' + points[2][indexX] + ',' + points[2][indexY] + ' ' +
                 'L' + points[3][indexX] + ',' + points[3][indexY] + ' ' +
                 'z';
-
         return path;
     };
 };
@@ -220,7 +216,6 @@ c3_chart_internal_fn.generateGetTimelineBarPoints = function (timelineIndices, i
         var offset = barX(d2),
             posX = barX(d),
             posY = barY(d);
-
         // 4 points that make a bar
         return [
             [posX, posY],
