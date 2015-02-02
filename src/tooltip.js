@@ -57,7 +57,7 @@ c3_chart_internal_fn.tooltipPosition = function (dataToShow, tWidth, tHeight, el
     var forArc = $$.hasArcType(),
         forTimeline = $$.hasTimelineType(),
         mouse = d3.mouse(element);
-    // Determin tooltip position
+    // Determine tooltip position
     if (forArc) {
         tooltipLeft = (($$.width - ($$.isLegendRight ? $$.getLegendWidth() : 0)) / 2) + mouse[0];
         tooltipTop = ($$.height / 2) + mouse[1] + 20;

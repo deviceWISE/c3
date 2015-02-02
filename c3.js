@@ -635,7 +635,7 @@
             });
         }
     
-        if (duration) {
+        if (duration && $$.isTabVisible()) { // Only use transition if tab visible. See #938.
             // transition should be derived from one transition
             d3.transition().duration(duration).each(function () {
                 var transitionsToWait = [];
@@ -678,6 +678,9 @@
             $$.redrawArea(drawArea);
             $$.redrawTimeline(drawTimeline);
             $$.redrawCircle(cx, cy);
+            $$.redrawText(xForText, yForText, options.flow);
+            $$.redrawRegion();
+            $$.redrawGrid();
             if (config.onrendered) {
                 config.onrendered.call($$);
             }
@@ -977,6 +980,21 @@
             window.console.error("Failed to parse x '" + date + "' to Date object");
         }
         return parsedDate;
+    };
+    
+    c3_chart_internal_fn.isTabVisible = function () {
+        var hidden;
+        if (typeof document.hidden !== "undefined") { // Opera 12.10 and Firefox 18 and later support
+            hidden = "hidden";
+        } else if (typeof document.mozHidden !== "undefined") {
+            hidden = "mozHidden";
+        } else if (typeof document.msHidden !== "undefined") {
+            hidden = "msHidden";
+        } else if (typeof document.webkitHidden !== "undefined") {
+            hidden = "webkitHidden";
+        }
+    
+        return document[hidden] ? false : true;
     };
 
     c3_chart_internal_fn.getDefaultConfig = function () {
@@ -3949,7 +3967,7 @@
         var forArc = $$.hasArcType(),
             forTimeline = $$.hasTimelineType(),
             mouse = d3.mouse(element);
-        // Determin tooltip position
+        // Determine tooltip position
         if (forArc) {
             tooltipLeft = (($$.width - ($$.isLegendRight ? $$.getLegendWidth() : 0)) / 2) + mouse[0];
             tooltipTop = ($$.height / 2) + mouse[1] + 20;
@@ -6981,7 +6999,8 @@
             return newScale;
         }
         function textFormatted(v) {
-            return tickFormat ? tickFormat(v) : v;
+            var formatted = tickFormat ? tickFormat(v) : v;
+            return typeof formatted !== 'undefined' ? formatted : '';
         }
         function getSizeFor1Char(tick) {
             if (tickTextCharSize) {
