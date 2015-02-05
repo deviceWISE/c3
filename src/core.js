@@ -574,6 +574,7 @@ c3_chart_internal_fn.redraw = function (options, transitions) {
     $$.updateBar(durationForExit);
 
     // timeline lanes
+    if ($$.updateTimelineLanes) { $$.updateTimelineLanes(durationForExit); }
     if ($$.updateTimeline) { $$.updateTimeline(durationForExit); }
 
     // lines, areas and cricles

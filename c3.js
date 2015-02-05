@@ -579,6 +579,7 @@
         $$.updateBar(durationForExit);
     
         // timeline lanes
+        if ($$.updateTimelineLanes) { $$.updateTimelineLanes(durationForExit); }
         if ($$.updateTimeline) { $$.updateTimeline(durationForExit); }
     
         // lines, areas and cricles
@@ -3389,6 +3390,26 @@
             .style('opacity', 0)
             .style("stroke", 'none')
             .remove();
+    };
+    c3_chart_internal_fn.updateTimelineLanes = function () {
+        var $$ = this, config = $$.config, d3 = $$.d3;
+        $$.lanes = $$.main.selectAll('.' + CLASS.chartLane);
+        if ($$.hasTimelineType($$.data.targets)) {
+            if (config.lane_combine) {
+                $$.lanes.each(function () {
+                    d3.select(this)
+                        .attr('x2', $$.width);
+                });
+            }
+            else {
+                $$.lanes.each(function (d, i) {
+                    d3.select(this)
+                        .attr('y1', function () { return d3.round((($$.height / $$.data.targets.length) * i)) + 0.5; })
+                        .attr('x2', $$.width)
+                        .attr('y2', function () { return d3.round((($$.height / $$.data.targets.length) * i)) + 0.5; });
+                });
+            }
+        }
     };
     c3_chart_internal_fn.redrawTimeline = function (drawTimeline, withTransition) {
         return [
