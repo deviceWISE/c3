@@ -149,6 +149,7 @@ c3_chart_internal_fn.generateFlow = function (args) {
             flow = args.flow,
             drawBar = args.drawBar,
             drawLine = args.drawLine,
+            drawTimeline = args.drawTimeline,
             drawArea = args.drawArea,
             cx = args.cx,
             cy = args.cy,
@@ -265,6 +266,9 @@ c3_chart_internal_fn.generateFlow = function (args) {
             mainLine
                 .attr('transform', null)
                 .attr("d", drawLine);
+            mainTimeline
+                .attr('transform', null)
+                .attr("d", drawTimeline);
             mainArea
                 .attr('transform', null)
                 .attr("d", drawArea);
