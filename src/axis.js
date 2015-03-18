@@ -26,6 +26,9 @@ Axis.prototype.init = function init() {
         .attr("transform", config.axis_rotated ? "" : "rotate(-90)")
         .style("text-anchor", this.textAnchorForYAxisLabel.bind(this));
 
+    if ($$.axes.initTimelineLaneLabels) { $$.axes.initTimelineLaneLabels(); }
+    if ($$.axes.initTimelineLaneAxis) { $$.axes.initTimelineLaneAxis(); }
+
     $$.axes.y2 = main.append("g")
         .attr("class", CLASS.axis + ' ' + CLASS.axisY2)
         // clip-path?

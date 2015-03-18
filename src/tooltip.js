@@ -55,11 +55,18 @@ c3_chart_internal_fn.tooltipPosition = function (dataToShow, tWidth, tHeight, el
     var $$ = this, config = $$.config, d3 = $$.d3;
     var svgLeft, tooltipLeft, tooltipRight, tooltipTop, chartRight;
     var forArc = $$.hasArcType(),
+        forTimeline = $$.hasTimelineType(),
         mouse = d3.mouse(element);
-  // Determin tooltip position
+    // Determine tooltip position
     if (forArc) {
         tooltipLeft = (($$.width - ($$.isLegendRight ? $$.getLegendWidth() : 0)) / 2) + mouse[0];
         tooltipTop = ($$.height / 2) + mouse[1] + 20;
+    } else if (forTimeline) {
+        tooltipTop = 0;
+        tooltipLeft = mouse[0] + $$.getCurrentPaddingLeft(true) + 30;
+        if (tooltipLeft > ($$.width / 2)) {
+            tooltipLeft = mouse[0] - tWidth;
+        }
     } else {
         svgLeft = $$.getSvgLeft(true);
         if (config.axis_rotated) {

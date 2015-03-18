@@ -6,6 +6,9 @@
   fill: none;
   stroke: #000; }
 
+.c3 line.c3-chart-lane {
+  stroke: lightgray; }
+
 .c3 text {
   -webkit-user-select: none;
   -moz-user-select: none;
@@ -21,6 +24,14 @@
   fill: #fff;
   font-size: 13px; }
 
+.c3-chart-arc.c3-target g path {
+  opacity: 0.75; }
+
+/* Added */
+.c3-chart-arc.c3-target.c3-focused g path {
+  opacity: 1; }
+
+/* Added */
 /*-- Axis --*/
 /*-- Grid --*/
 .c3-grid line {
@@ -52,10 +63,13 @@
 
 /*-- Bar --*/
 .c3-bar {
+  fill-opacity: 0.75;
+  /* Added */
   stroke-width: 0; }
 
 .c3-bar._expanded_ {
-  fill-opacity: 0.75; }
+  fill-opacity: 1;
+  /* 0.75; */ }
 
 /*-- Focus --*/
 .c3-target.c3-focused {

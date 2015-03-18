@@ -5,6 +5,8 @@
   fill: none;
   stroke: #000;
 }
+.c3 line.c3-chart-lane {
+  stroke: lightgray; }
 .c3 text {
   -webkit-user-select: none;
      -moz-user-select: none;
@@ -27,3 +29,7 @@
   fill: #fff;
   font-size: 13px;
 }
+
+.c3-chart-arc.c3-target g path { opacity: 0.75; }/* Added */
+
+.c3-chart-arc.c3-target.c3-focused g path { opacity: 1; }/* Added */

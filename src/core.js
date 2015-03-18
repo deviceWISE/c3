@@ -163,6 +163,7 @@ c3_chart_internal_fn.initParams = function () {
 
 c3_chart_internal_fn.initChartElements = function () {
     if (this.initBar) { this.initBar(); }
+    if (this.initTimelineLanes) { this.initTimelineLanes(); }
     if (this.initLine) { this.initLine(); }
     if (this.initArc) { this.initArc(); }
     if (this.initGauge) { this.initGauge(); }
@@ -383,6 +384,14 @@ c3_chart_internal_fn.updateSizes = function () {
         left: hasArc ? 0 : $$.getCurrentPaddingLeft()
     };
 
+    // for main lanes
+    $$.laneMargin = {
+        top: config.lane_margins.top,
+        right: config.lane_margins.right,
+        bottom: config.lane_margins.bottom,
+        left: config.lane_margins.left
+    };
+
     // for subchart
     $$.margin2 = config.axis_rotated ? {
         top: $$.margin.top,
@@ -445,6 +454,9 @@ c3_chart_internal_fn.updateTargets = function (targets) {
     //-- Arc --//
     if ($$.hasArcType() && $$.updateTargetsForArc) { $$.updateTargetsForArc(targets); }
 
+    //-- Timeline --//
+    if ($$.updateTargetsForTimeline) { $$.updateTargetsForTimeline(targets); }
+
     /*-- Sub --*/
 
     if ($$.updateTargetsForSubchart) { $$.updateTargetsForSubchart(targets); }
@@ -462,11 +474,12 @@ c3_chart_internal_fn.showTargets = function () {
 c3_chart_internal_fn.redraw = function (options, transitions) {
     var $$ = this, main = $$.main, d3 = $$.d3, config = $$.config;
     var areaIndices = $$.getShapeIndices($$.isAreaType), barIndices = $$.getShapeIndices($$.isBarType), lineIndices = $$.getShapeIndices($$.isLineType);
+    var timelineIndices = $$.getShapeIndices($$.isTimelineType);
     var withY, withSubchart, withTransition, withTransitionForExit, withTransitionForAxis,
         withTransform, withUpdateXDomain, withUpdateOrgXDomain, withTrimXDomain, withLegend,
         withEventRect, withDimension, withUpdateXAxis;
     var hideAxis = $$.hasArcType();
-    var drawArea, drawBar, drawLine, xForText, yForText;
+    var drawArea, drawBar, drawLine, drawTimeline, xForText, yForText;
     var duration, durationForExit, durationForAxis;
     var waitForDraw, flow;
     var targetsToShow = $$.filterTargetsToShow($$.data.targets), tickValues, i, intervalForCulling, xDomainForZoom;
@@ -532,6 +545,7 @@ c3_chart_internal_fn.redraw = function (options, transitions) {
     }
 
     // axes
+    if ($$.axis.redrawTimelineLaneAxis) { $$.axis.redrawTimelineLaneAxis(); }
     $$.axis.redraw(transitions, hideAxis);
 
     // Update axis label
@@ -561,6 +575,7 @@ c3_chart_internal_fn.redraw = function (options, transitions) {
     drawArea = $$.generateDrawArea ? $$.generateDrawArea(areaIndices, false) : undefined;
     drawBar = $$.generateDrawBar ? $$.generateDrawBar(barIndices) : undefined;
     drawLine = $$.generateDrawLine ? $$.generateDrawLine(lineIndices, false) : undefined;
+    drawTimeline = $$.generateDrawTimeline ? $$.generateDrawTimeline(timelineIndices, false) : undefined;
     xForText = $$.generateXYForText(areaIndices, barIndices, lineIndices, true);
     yForText = $$.generateXYForText(areaIndices, barIndices, lineIndices, false);
 
@@ -593,6 +608,10 @@ c3_chart_internal_fn.redraw = function (options, transitions) {
     // bars
     $$.updateBar(durationForExit);
 
+    // timeline lanes
+    if ($$.updateTimelineLanes) { $$.updateTimelineLanes(durationForExit); }
+    if ($$.updateTimeline) { $$.updateTimeline(durationForExit); }
+
     // lines, areas and cricles
     $$.updateLine(durationForExit);
     $$.updateArea(durationForExit);
@@ -608,7 +627,7 @@ c3_chart_internal_fn.redraw = function (options, transitions) {
 
     // subchart
     if ($$.redrawSubchart) {
-        $$.redrawSubchart(withSubchart, transitions, duration, durationForExit, areaIndices, barIndices, lineIndices);
+        $$.redrawSubchart(withSubchart, transitions, duration, durationForExit, areaIndices, barIndices, lineIndices, timelineIndices);
     }
 
     // circles for select
@@ -637,6 +656,7 @@ c3_chart_internal_fn.redraw = function (options, transitions) {
             duration: options.flow.duration,
             drawBar: drawBar,
             drawLine: drawLine,
+            drawTimeline: drawTimeline,
             drawArea: drawArea,
             cx: cx,
             cy: cy,
@@ -656,6 +676,7 @@ c3_chart_internal_fn.redraw = function (options, transitions) {
                 $$.redrawBar(drawBar, true),
                 $$.redrawLine(drawLine, true),
                 $$.redrawArea(drawArea, true),
+                $$.redrawTimeline(drawTimeline, true),
                 $$.redrawCircle(cx, cy, true),
                 $$.redrawText(xForText, yForText, options.flow, true),
                 $$.redrawRegion(true),
@@ -671,6 +692,7 @@ c3_chart_internal_fn.redraw = function (options, transitions) {
             transitionsToWait.forEach(function (t) {
                 waitForDraw.add(t);
             });
+
         })
         .call(waitForDraw, function () {
             if (flow) {
@@ -685,6 +707,7 @@ c3_chart_internal_fn.redraw = function (options, transitions) {
         $$.redrawBar(drawBar);
         $$.redrawLine(drawLine);
         $$.redrawArea(drawArea);
+        $$.redrawTimeline(drawTimeline);
         $$.redrawCircle(cx, cy);
         $$.redrawText(xForText, yForText, options.flow);
         $$.redrawRegion();
@@ -776,6 +799,9 @@ c3_chart_internal_fn.getTranslate = function (target) {
     } else if (target === 'arc') {
         x = $$.arcWidth / 2;
         y = $$.arcHeight / 2;
+    } else if (target === 'lane') {
+        x = 0;
+        y = 0;
     }
     return "translate(" + x + "," + y + ")";
 };
