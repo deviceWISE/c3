@@ -150,7 +150,7 @@ c3_chart_internal_fn.updateTimeline = function (durationForExit) {
         .style("stroke", 'none')
         .remove();
 };
-c3_chart_internal_fn.updateTimelineLanes = function () {
+c3_chart_internal_fn.updateTimelineLanes = function (timelineIndices) {
     var $$ = this, config = $$.config, d3 = $$.d3;
     $$.lanes = $$.main.selectAll('.' + CLASS.chartLane);
     if ($$.hasTimelineType($$.data.targets)) {
@@ -161,11 +161,13 @@ c3_chart_internal_fn.updateTimelineLanes = function () {
             });
         }
         else {
-            $$.lanes.each(function (d, i) {
-                d3.select(this)
-                    .attr('y1', function () { return d3.round((($$.height / $$.data.targets.length) * i)) + 0.5; })
-                    .attr('x2', $$.width)
-                    .attr('y2', function () { return d3.round((($$.height / $$.data.targets.length) * i)) + 0.5; });
+            $$.lanes.each(function (d) {
+              if (timelineIndices[d.id] !== undefined) {
+                  d3.select(this)
+                      .attr('y1', function () { return d3.round( ( $$.height / (timelineIndices.__max__+1) ) * timelineIndices[d.id] ) + 0.5; })
+                      .attr('x2', $$.width)
+                      .attr('y2', function () { return d3.round( ( $$.height / (timelineIndices.__max__+1) ) * timelineIndices[d.id] ) + 0.5; });
+              }
             });
         }
     }
@@ -199,9 +201,9 @@ Axis.prototype.redrawTimelineLaneAxis = function () {
         });
     }
 };
-c3_chart_internal_fn.generateDrawTimeline = function (timelineIndicies, isSub) {
+c3_chart_internal_fn.generateDrawTimeline = function (timelineIndices, isSub) {
     var $$ = this,
-        getPoints = $$.generateGetTimelineBarPoints(timelineIndicies, isSub);
+        getPoints = $$.generateGetTimelineBarPoints(timelineIndices, isSub);
     return function (d, i) {
         // 4 points that make a bar
         var points = getPoints(d, i);
@@ -230,18 +232,26 @@ c3_chart_internal_fn.generateGetTimelineBarPoints = function (timelineIndices, i
         };
     return function (d) {
         var d2 = d;
-        if ($$.data.targets[timelineIndices[d.id]].values[d.index + 1]) {
+        if ($$.data.targets[timelineIndices[d.id]] && $$.data.targets[timelineIndices[d.id]].values[d.index + 1]) {
             d2 = $$.data.targets[timelineIndices[d.id]].values[d.index + 1];
+            var offset = barX(d2),
+                posX = barX(d),
+                posY = barY(d);
+            // 4 points that make a bar
+            return [
+                [posX, posY],
+                [posX, posY + barW],
+                [offset, posY + barW],
+                [offset, posY]
+            ];
         }
-        var offset = barX(d2),
-            posX = barX(d),
-            posY = barY(d);
-        // 4 points that make a bar
-        return [
-            [posX, posY],
-            [posX, posY + barW],
-            [offset, posY + barW],
-            [offset, posY]
-        ];
+        else {
+            return [
+                [0, 0],
+                [0, 0],
+                [0, 0],
+                [0, 0]
+            ];
+        }
     };
 };
