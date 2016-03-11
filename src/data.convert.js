@@ -1,6 +1,12 @@
-c3_chart_internal_fn.convertUrlToData = function (url, mimeType, keys, done) {
+c3_chart_internal_fn.convertUrlToData = function (url, mimeType, headers, keys, done) {
     var $$ = this, type = mimeType ? mimeType : 'csv';
-    $$.d3.xhr(url, function (error, data) {
+    var req = $$.d3.xhr(url);
+    if (headers) {
+        Object.keys(headers).forEach(function (header) {
+            req.header(header, headers[header]);
+        });
+    }
+    req.get(function (error, data) {
         var d;
         if (!data) {
             throw new Error(error.responseURL + ' ' + error.status + ' (' + error.statusText + ')');
@@ -140,7 +146,8 @@ c3_chart_internal_fn.convertDataToTargets = function (data, appendXs) {
             id: convertedId,
             id_org: id,
             values: data.map(function (d, i) {
-                var xKey = $$.getXKey(id), rawX = d[xKey], x = $$.generateTargetX(rawX, id, i);
+                var xKey = $$.getXKey(id), rawX = d[xKey], x = $$.generateTargetX(rawX, id, i),
+                    value = d[id] !== null && !isNaN(d[id]) ? +d[id] : null;
                 // use x as categories if custom x and categorized
                 if ($$.isCustomX() && $$.isCategorized() && index === 0 && rawX) {
                     if (i === 0) { config.axis_x_categories = []; }
@@ -150,7 +157,7 @@ c3_chart_internal_fn.convertDataToTargets = function (data, appendXs) {
                 if (isUndefined(d[id]) || $$.data.xs[id].length <= i) {
                     x = undefined;
                 }
-                return {x: x, value: d[id] !== null && !isNaN(d[id]) ? +d[id] : null, id: convertedId};
+                return {x: x, value: value, id: convertedId};
             }).filter(function (v) { return isDefined(v.x); })
         };
     });
@@ -176,6 +183,10 @@ c3_chart_internal_fn.convertDataToTargets = function (data, appendXs) {
             return v1 - v2;
         });
     });
+
+    // cache information about values
+    $$.hasNegativeValue = $$.hasNegativeValueInTargets(targets);
+    $$.hasPositiveValue = $$.hasPositiveValueInTargets(targets);
 
     // set target types
     if (config.data_type) {
