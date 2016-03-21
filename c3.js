@@ -3286,7 +3286,6 @@
             .attr('class', function (d) { return classChartBar(d) + classFocus(d); });
         mainBarEnter = mainBarUpdate.enter().append('g')
             .attr('class', classChartBar)
-            .style('opacity', 0)
             .style("pointer-events", "none");
         // Bars for each data
         mainBarEnter.append('g')
@@ -3309,7 +3308,6 @@
         $$.mainBar
             .style("opacity", initialOpacity);
         $$.mainBar.exit().transition().duration(durationForExit)
-            .style('opacity', 0)
             .remove();
     };
     c3_chart_internal_fn.redrawBar = function (drawBar, withTransition) {
@@ -5256,7 +5254,6 @@
             })
             .attr("d", $$.svgArc);
         $$.svg.selectAll('.' + CLASS.arc);
-    //        .style("opacity", 1);// moved to css
     };
 
     c3_chart_internal_fn.expandDuration = function (id) {
@@ -5356,7 +5353,6 @@
             .attr("class", $$.classArc.bind($$))
             .style("fill", function (d) { return $$.color(d.data); })
             .style("cursor", function (d) { return config.interaction_enabled && config.data_selection_isselectable(d) ? "pointer" : null; })
-    //        .style("opacity", 0) // moved to css
             .each(function (d) {
                 if ($$.isGaugeType(d.data)) {
                     d.startAngle = d.endAngle = -1 * (Math.PI / 2);
@@ -5365,7 +5361,6 @@
             });
         mainArc
             .attr("transform", function (d) { return !$$.isGaugeType(d.data) && withTransform ? "scale(0)" : ""; })
-    //        .style("opacity", function (d) { return d === this._current ? 0 : 1; }) // moved to css
             .on('mouseover', config.interaction_enabled ? function (d) {
                 var updated, arcData;
                 if ($$.transiting) { // skip while transiting
@@ -5446,7 +5441,6 @@
             .style("fill", function (d) {
                 return $$.levelColor ? $$.levelColor(d.data.values[0].value) : $$.color(d.data.id);
             }) // Where gauge reading color would receive customization.
-    //        .style("opacity", 1) // moved to css
             .call($$.endall, function () {
                 $$.transiting = false;
             });
